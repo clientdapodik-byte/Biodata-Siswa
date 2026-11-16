@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Pengelola Biodata Siswa</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
+    .modal-backdrop { background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-up { animation: fadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    @keyframes modalPop {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .animate-modal { animation: modalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+    .animate-shake { animation: shake 0.4s ease-in-out; }
+
+    /* Aturan Cetak Blangko A4 / PDF */
+    @media print {
+      body * { visibility: hidden; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea {
+        position: absolute; left: 0; top: 0; width: 100%;
+        background: white !important; padding: 0 !important; margin: 0 !important;
+        box-shadow: none !important;
+      }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="text-slate-800 antialiased">
+
+  <!-- ================= HALAMAN LOGIN ADMIN ================= -->
+  <div id="loginScreen" class="min-h-screen relative flex items-center justify-center p-4 bg-gradient-to-br from-slate-950 via-blue-950 to-indigo-950 overflow-hidden">
+    <div class="absolute top-1/4 left-1/4 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-indigo-500/20 rounded-full blur-3xl"></div>
+
+    <div id="loginCard" class="relative bg-white/95 backdrop-blur-xl max-w-md w-full rounded-3xl shadow-2xl border border-white/40 p-8 sm:p-9 animate-fade-up">
+      <div class="text-center mb-7">
+        <div class="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-blue-600/30">
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+        <h1 class="text-2xl font-extrabold text-slate-900 mt-4">Panel Pengelola</h1>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">Sistem Manajemen & Cetak Blangko Biodata Siswa</p>
+      </div>
+
+      <form onsubmit="prosesLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Password Admin</label>
+          <div class="relative">
+            <input type="password" id="adminPasswordInput" required placeholder="Masukkan password..."
+              class="w-full border-2 border-slate-200 rounded-xl pl-4 pr-11 py-3 text-sm focus:outline-none focus:border-blue-600 transition">
+            <button type="button" onclick="togglePwdVisibility()" class="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600">
+              <i id="eyeIcon" data-lucide="eye" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" id="loginBtn"
+          class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-600/25 active:scale-95 transition-all flex items-center justify-center gap-2">
+          <span>Masuk ke Dashboard</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= DASHBOARD UTAMA PENGELOLA ================= -->
+  <div id="dashboardScreen" class="hidden min-h-screen flex flex-col">
+    
+    <!-- Top Navbar -->
+    <header class="bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 text-white px-4 sm:px-8 py-4 shadow-lg sticky top-0 z-30">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300">
+            <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight">ADMIN BIODATA SISWA</h1>
+            <p class="text-[11px] sm:text-xs text-blue-300">Pantau Data Masuk, Koreksi & Cetak Blangko</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a id="openSheetBtn" href="#" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl shadow transition">
+            <i data-lucide="table" class="w-4 h-4"></i> Spreadsheet
+          </a>
+          <button onclick="muatData()" class="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/15 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> <span class="hidden sm:inline">Refresh</span>
+          </button>
+          <button onclick="logout()" class="inline-flex items-center gap-1.5 bg-rose-600/90 hover:bg-rose-600 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl transition">
+            <i data-lucide="log-out" class="w-4 h-4"></i> <span class="hidden sm:inline">Keluar</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="max-w-7xl w-full mx-auto p-4 sm:p-8 flex-1 space-y-6">
+
+      <!-- Kartu Statistik Beranimasi -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-up">
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-400 uppercase">Total Siswa</span>
+            <div class="p-2 bg-blue-50 text-blue-600 rounded-xl"><i data-lucide="users" class="w-4 h-4"></i></div>
+          </div>
+          <p id="statTotal" class="text-3xl font-extrabold text-slate-900 mt-2">0</p>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-400 uppercase">Laki-laki</span>
+            <div class="p-2 bg-sky-50 text-sky-600 rounded-xl"><i data-lucide="user" class="w-4 h-4"></i></div>
+          </div>
+          <p id="statLaki" class="text-3xl font-extrabold text-sky-600 mt-2">0</p>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-400 uppercase">Perempuan</span>
+            <div class="p-2 bg-pink-50 text-pink-600 rounded-xl"><i data-lucide="user-round" class="w-4 h-4"></i></div>
+          </div>
+          <p id="statPerempuan" class="text-3xl font-extrabold text-pink-600 mt-2">0</p>
+        </div>
+
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-400 uppercase">Kelas / Jurusan</span>
+            <div class="p-2 bg-amber-50 text-amber-600 rounded-xl"><i data-lucide="school" class="w-4 h-4"></i></div>
+          </div>
+          <p id="statKelas" class="text-3xl font-extrabold text-amber-600 mt-2">0</p>
+        </div>
+      </div>
+
+      <!-- Bar Pencarian, Filter & Export -->
+      <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-3 justify-between animate-fade-up">
+        <div class="flex flex-col sm:flex-row gap-3 flex-1">
+          <div class="relative w-full sm:w-80">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3"></i>
+            <input type="text" id="searchInput" oninput="filterTabel()" placeholder="Cari Nama, NISN, atau SMP Asal..."
+              class="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-blue-600 transition">
+          </div>
+          
+          <select id="kelasFilter" onchange="filterTabel()"
+            class="w-full sm:w-60 border border-slate-200 rounded-xl px-3.5 py-2 text-sm bg-white focus:outline-none focus:border-blue-600 transition">
+            <option value="">Semua Kelas / Jurusan</option>
+          </select>
+        </div>
+        <div>
+          <button onclick="exportCSV()" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm active:scale-95 transition">
+            <i data-lucide="download" class="w-4 h-4"></i> Export Excel (CSV)
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabel Data Siswa -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden animate-fade-up">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                <th class="py-4 px-4">No</th>
+                <th class="py-4 px-4">NISN</th>
+                <th class="py-4 px-4">Nama Lengkap</th>
+                <th class="py-4 px-4">Kelas / Jurusan</th>
+                <th class="py-4 px-4">L/P</th>
+                <th class="py-4 px-4">SMP Asal</th>
+                <th class="py-4 px-4">No. HP</th>
+                <th class="py-4 px-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody" class="divide-y divide-slate-100 text-sm">
+              <tr>
+                <td colspan="8" class="py-12 text-center text-slate-400">Memuat data siswa...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= MODAL 1: DETAIL & CETAK BLANGKO ================= -->
+  <div id="detailModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div class="bg-white max-w-4xl w-full rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col animate-modal">
+      <div class="no-print bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2.5">
+          <i data-lucide="file-text" class="w-5 h-5 text-blue-400"></i>
+          <h3 class="font-bold text-sm sm:text-base">Pratinjau Blangko Data Diri Siswa</h3>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="window.print()" class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl transition">
+            <i data-lucide="printer" class="w-4 h-4"></i> Cetak / PDF
+          </button>
+          <button onclick="tutupModal('detailModal')" class="bg-slate-800 hover:bg-slate-700 text-white text-xs sm:text-sm px-3.5 py-2 rounded-xl transition">
+            ✕
+          </button>
+        </div>
+      </div>
+      
+      <div id="printArea" class="p-6 sm:p-10 overflow-y-auto text-xs sm:text-sm text-black leading-relaxed"></div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL 2: EDIT DATA SISWA ================= -->
+  <div id="editModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div class="bg-white max-w-4xl w-full rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col animate-modal">
+      <div class="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+          <i data-lucide="edit-3" class="w-5 h-5"></i>
+          <h3 class="font-bold text-base">Edit Biodata Siswa</h3>
+        </div>
+        <button onclick="tutupModal('editModal')" class="bg-black/20 hover:bg-black/30 text-white text-sm px-3 py-1 rounded-xl transition">✕</button>
+      </div>
+      
+      <form id="editForm" onsubmit="simpanEdit(event)" class="p-6 overflow-y-auto space-y-6 text-sm">
+        <input type="hidden" id="editRowNumber">
+        <div id="editFieldsContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        <div class="flex justify-end gap-3 pt-4 border-t">
+          <button type="button" onclick="tutupModal('editModal')" class="px-5 py-2.5 border border-slate-200 rounded-xl text-slate-600 font-semibold hover:bg-slate-100">Batal</button>
+          <button type="submit" id="saveEditBtn" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow">
+            Simpan Perubahan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // TEMPELKAN URL WEB APP APPS SCRIPT (/exec) YANG SAMA DI BAWAH INI:
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-WIiwk-ZScDC38sah7WbglQKs1GZTNh4hHuHcqQ8dDmuOUwo8f3h-scIxC8KzbNM_3A/exec";
+    // =========================================================================
+
+    lucide.createIcons();
+
+    let adminPassword = sessionStorage.getItem('admin_pwd') || '';
+    let allStudents = [];
+    let filteredStudents = [];
+
+    window.onload = function() {
+      if (adminPassword) {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('dashboardScreen').classList.remove('hidden');
+        muatData();
+      }
+    };
+
+    function togglePwdVisibility() {
+      const inp = document.getElementById('adminPasswordInput');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    function prosesLogin(e) {
+      e.preventDefault();
+      if (SCRIPT_URL.includes("PASTE_URL")) {
+        Swal.fire('Konfigurasi Belum Diisi', 'Masukkan URL Web App Apps Script pada file admin.html terlebih dahulu.', 'error');
+        return;
+      }
+
+      const pwd = document.getElementById('adminPasswordInput').value;
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>Memverifikasi...</span>';
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'login', password: pwd })
+      })
+      .then(r => r.json())
+      .then(res => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Masuk ke Dashboard</span>';
+        if (res.status === 'success') {
+          adminPassword = pwd;
+          sessionStorage.setItem('admin_pwd', pwd);
+          document.getElementById('loginScreen').classList.add('hidden');
+          document.getElementById('dashboardScreen').classList.remove('hidden');
+          muatData();
+        } else {
+          const card = document.getElementById('loginCard');
+          card.classList.remove('animate-shake');
+          void card.offsetWidth;
+          card.classList.add('animate-shake');
+          Swal.fire('Akses Ditolak', res.message, 'error');
+        }
+      })
+      .catch(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>Masuk ke Dashboard</span>';
+        Swal.fire('Error', 'Gagal terhubung ke server Apps Script.', 'error');
+      });
+    }
+
+    function logout() {
+      sessionStorage.removeItem('admin_pwd');
+      location.reload();
+    }
+
+    function animateCounter(id, target) {
+      const el = document.getElementById(id);
+      const duration = 600;
+      const startTime = performance.now();
+      function update(now) {
+        const progress = Math.min((now - startTime) / duration, 1);
+        el.innerText = Math.floor(progress * target);
+        if (progress < 1) requestAnimationFrame(update);
+        else el.innerText = target;
+      }
+      requestAnimationFrame(update);
+    }
+
+    function muatData() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = `<tr><td colspan="8" class="py-12 text-center text-slate-500">⏳ Mengambil data terbaru dari Spreadsheet...</td></tr>`;
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'getAll', password: adminPassword })
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.status === 'unauthorized') {
+          logout();
+          return;
+        }
+        if (res.status === 'success') {
+          allStudents = res.data;
+          if (res.sheetUrl) {
+            const btnSheet = document.getElementById('openSheetBtn');
+            btnSheet.href = res.sheetUrl;
+            btnSheet.classList.remove('hidden');
+          }
+          updateStatistikDanFilter();
+          filterTabel();
+        } else {
+          Swal.fire('Gagal', res.message, 'error');
+        }
+      })
+      .catch(() => {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-12 text-center text-rose-500">Gagal memuat data. Periksa koneksi internet.</td></tr>`;
+      });
+    }
+
+    function updateStatistikDanFilter() {
+      animateCounter('statTotal', allStudents.length);
+      animateCounter('statLaki', allStudents.filter(s => s.jenis_kelamin === 'Laki-laki').length);
+      animateCounter('statPerempuan', allStudents.filter(s => s.jenis_kelamin === 'Perempuan').length);
+
+      const kelasUnik = [...new Set(allStudents.map(s => s.kelas_jurusan).filter(Boolean))].sort();
+      animateCounter('statKelas', kelasUnik.length);
+
+      const filterSelect = document.getElementById('kelasFilter');
+      const currentSelected = filterSelect.value;
+      filterSelect.innerHTML = `<option value="">Semua Kelas / Jurusan (${allStudents.length})</option>`;
+      kelasUnik.forEach(kls => {
+        const count = allStudents.filter(s => s.kelas_jurusan === kls).length;
+        filterSelect.innerHTML += `<option value="${kls}">${kls} (${count})</option>`;
+      });
+      filterSelect.value = currentSelected;
+    }
+
+    function filterTabel() {
+      const keyword = document.getElementById('searchInput').value.toLowerCase();
+      const kelas = document.getElementById('kelasFilter').value;
+
+      filteredStudents = allStudents.filter(s => {
+        const matchKelas = !kelas || s.kelas_jurusan === kelas;
+        const matchKeyword = !keyword ||
+          (s.nama_lengkap && s.nama_lengkap.toLowerCase().includes(keyword)) ||
+          (s.nisn && s.nisn.toLowerCase().includes(keyword)) ||
+          (s.smp_asal && s.smp_asal.toLowerCase().includes(keyword));
+        return matchKelas && matchKeyword;
+      });
+
+      renderTabel();
+    }
+
+    function renderTabel() {
+      const tbody = document.getElementById('tableBody');
+      if (filteredStudents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-12 text-center text-slate-400">Tidak ada data siswa yang sesuai.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filteredStudents.map((s, index) => {
+        const isLaki = s.jenis_kelamin === 'Laki-laki';
+        const initial = (s.nama_lengkap || '?').charAt(0).toUpperCase();
+        return `
+        <tr class="hover:bg-blue-50/40 transition-colors">
+          <td class="py-3.5 px-4 text-slate-400 font-medium">${index + 1}</td>
+          <td class="py-3.5 px-4 font-mono text-xs font-semibold text-slate-700">${s.nisn}</td>
+          <td class="py-3.5 px-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-full ${isLaki ? 'bg-sky-100 text-sky-700' : 'bg-pink-100 text-pink-700'} font-bold text-xs flex items-center justify-center shrink-0">
+                ${initial}
+              </div>
+              <span class="font-bold text-slate-900">${s.nama_lengkap}</span>
+            </div>
+          </td>
+          <td class="py-3.5 px-4">
+            <span class="bg-blue-50 text-blue-700 border border-blue-200/70 text-xs font-semibold px-2.5 py-1 rounded-lg">${s.kelas_jurusan}</span>
+          </td>
+          <td class="py-3.5 px-4">
+            <span class="${isLaki ? 'bg-sky-100 text-sky-800' : 'bg-pink-100 text-pink-800'} text-xs font-bold px-2 py-0.5 rounded-md">
+              ${isLaki ? 'L' : 'P'}
+            </span>
+          </td>
+          <td class="py-3.5 px-4 text-slate-600 text-xs">${s.smp_asal}</td>
+          <td class="py-3.5 px-4 text-slate-600 font-mono text-xs">${s.no_hp}</td>
+          <td class="py-3.5 px-4">
+            <div class="flex items-center justify-center gap-1.5">
+              <button onclick="lihatBlangko(${s.rowNumber})" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-sm transition" title="Lihat & Cetak Blangko">
+                Detail
+              </button>
+              <button onclick="bukaEdit(${s.rowNumber})" class="bg-amber-500 hover:bg-amber-400 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-sm transition" title="Edit Data">
+                Edit
+              </button>
+              <button onclick="konfirmasiHapus(${s.rowNumber}, '${s.nisn}', '${s.nama_lengkap.replace(/'/g, "\\'")}')" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-sm transition" title="Hapus Data">
+                Hapus
+              </button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function lihatBlangko(rowNumber) {
+      const s = allStudents.find(item => item.rowNumber === rowNumber);
+      if (!s) return;
+
+      const rowItem = (label, val) => `
+        <tr>
+          <td class="py-1 w-64 align-top">${label}</td>
+          <td class="py-1 w-4 align-top">:</td>
+          <td class="py-1 font-medium">${val || '-'}</td>
+        </tr>`;
+
+      document.getElementById('printArea').innerHTML = `
+        <div class="border-b-2 border-black pb-3 mb-4 text-center">
+          <h2 class="text-lg font-bold uppercase tracking-wide">BLANGKO DATA DIRI SISWA</h2>
+          <p class="text-xs text-slate-600">Waktu Pengisian: ${s.waktu_input}</p>
+        </div>
+
+        <table class="w-full mb-4 bg-slate-50 p-2 border border-slate-300">
+          ${rowItem('<strong>NAMA SISWA</strong>', `<strong>${s.nama_lengkap}</strong>`)}
+          ${rowItem('<strong>KELAS / JURUSAN</strong>', s.kelas_jurusan)}
+          ${rowItem('<strong>NISN</strong>', s.nisn)}
+        </table>
+
+        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">I. Keterangan Tentang Diri Siswa</h4>
+        <table class="w-full">
+          ${rowItem('1. Nama Lengkap Siswa', s.nama_lengkap)}
+          ${rowItem('2. Nama Panggilan', s.nama_panggilan)}
+          ${rowItem('3. Jenis Kelamin', s.jenis_kelamin)}
+          ${rowItem('4. Tempat / Tanggal Lahir', `${s.tempat_lahir}, ${s.tanggal_lahir}`)}
+          ${rowItem('5. Agama', s.agama)}
+          ${rowItem('6. Kewarganegaraan', s.kewarganegaraan)}
+          ${rowItem('7. Anak ke-berapa', s.anak_ke)}
+          ${rowItem('8. Jumlah Saudara', `Kandung: ${s.jml_saudara_kandung} | Tiri: ${s.jml_saudara_tiri} | Angkat: ${s.jml_saudara_angkat}`)}
+          ${rowItem('9. Anak Yatim/Piatu/Yatim Piatu', s.status_yatim)}
+          ${rowItem('10. Bahasa Sehari-hari', s.bahasa_sehari)}
+        </table>
+
+        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">II. Keterangan Tempat Tinggal & Rumah</h4>
+        <table class="w-full">
+          ${rowItem('11. Alamat Lengkap', s.alamat)}
+          ${rowItem('12. No. Telp / HP', s.no_hp)}
+          ${rowItem('13. Tinggal Dengan', s.tinggal_dengan)}
+          ${rowItem('14. Jarak Tempat Tinggal ke Sekolah', s.jarak_sekolah)}
+          ${rowItem('15. Alat Transportasi ke Sekolah', s.transportasi)}
+          ${rowItem('16. Kepemilikan / Bangunan / Lantai', `${s.kepemilikan_rumah} / ${s.bangunan_rumah} / Lantai ${s.lantai_rumah}`)}
+          ${rowItem('17. Jumlah Anggota Keluarga', `${s.jml_anggota_keluarga} orang`)}
+        </table>
+
+        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">III. Keterangan Kesehatan & Pendidikan</h4>
+        <table class="w-full">
+          ${rowItem('18. Golongan Darah / Tinggi / Berat', `Gol. ${s.golongan_darah} | TB: ${s.tinggi_badan} cm | BB: ${s.berat_badan} kg`)}
+          ${rowItem('19. Penyakit Pernah Diderita', s.riwayat_penyakit)}
+          ${rowItem('20. Kelainan Jasmani', s.kelainan_jasmani)}
+          ${rowItem('21. Pendidikan Sebelumnya / Asal', `${s.pendidikan_sebelumnya} - ${s.smp_asal} (Lama belajar: ${s.lama_belajar})`)}
+          ${rowItem('22. Tgl & No. STTB / Ijazah', `${s.tgl_ijazah} / No: ${s.no_ijazah}`)}
+          ${rowItem('23. Tgl & No. SKHUN', `${s.tgl_skhun || '-'} / No: ${s.no_skhun}`)}
+        </table>
+
+        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">IV. Keterangan Ayah Kandung</h4>
+        <table class="w-full">
+          ${rowItem('24. Nama Ayah / Status', `${s.ayah_nama} (${s.ayah_status})`)}
+          ${rowItem('25. Tempat / Tgl Lahir Ayah', `${s.ayah_tempat_lahir}, ${s.ayah_tgl_lahir}`)}
+          ${rowItem('26. Agama / Kewarganegaraan', `${s.ayah_agama} / ${s.ayah_kewarganegaraan}`)}
+          ${rowItem('27. Pendidikan / Pekerjaan', `${s.ayah_pendidikan} / ${s.ayah_pekerjaan}`)}
+          ${rowItem('28. Penghasilan Per Bulan', s.ayah_penghasilan)}
+          ${rowItem('29. Alamat & No. Telp/HP Ayah', s.ayah_alamat_hp)}
+        </table>
+
+        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">V. Keterangan Ibu Kandung</h4>
+        <table class="w-full">
+          ${rowItem('30. Nama Ibu / Status', `${s.ibu_nama} (${s.ibu_status})`)}
+          ${rowItem('31. Tempat / Tgl Lahir Ibu', `${s.ibu_tempat_lahir}, ${s.ibu_tgl_lahir}`)}
+          ${rowItem('32. Agama / Kewarganegaraan', `${s.ibu_agama} / ${s.ibu_kewarganegaraan}`)}
+          ${rowItem('33. Pendidikan / Pekerjaan', `${s.ibu_pendidikan} / ${s.ibu_pekerjaan}`)}
+          ${rowItem('34. Penghasilan/Pengeluaran Per Bulan', s.ibu_penghasilan)}
+          ${rowItem('35. Alamat & No. Telp/HP Ibu', s.ibu_alamat_hp)}
+        </table>
+
+        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">VI. Keterangan Wali</h4>
+        <table class="w-full">
+          ${rowItem('36. Nama Wali / Status', `${s.wali_nama} (${s.wali_status})`)}
+          ${rowItem('37. Tempat / Tgl Lahir Wali', `${s.wali_tempat_lahir}, ${s.wali_tgl_lahir}`)}
+          ${rowItem('38. Pendidikan / Pekerjaan Wali', `${s.wali_pendidikan} / ${s.wali_pekerjaan}`)}
+          ${rowItem('39. Alamat & No. HP Wali', s.wali_alamat_hp)}
+        </table>
+
+        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">VII. Kegemaran & Riwayat Beasiswa</h4>
+        <table class="w-full">
+          ${rowItem('40. Kesenian / Olahraga', `${s.hobi_kesenian} / ${s.hobi_olahraga}`)}
+          ${rowItem('41. Organisasi / Lain-lain', `${s.hobi_organisasi} / ${s.hobi_lain}`)}
+          ${rowItem('42. Beasiswa 1', s.beasiswa_1)}
+          ${rowItem('43. Beasiswa 2', s.beasiswa_2)}
+          ${rowItem('44. Beasiswa 3', s.beasiswa_3)}
+        </table>
+      `;
+
+      document.getElementById('detailModal').classList.remove('hidden');
+    }
+
+    const editableFields = [
+      { key: 'nisn', label: 'NISN' }, { key: 'kelas_jurusan', label: 'Kelas / Jurusan' },
+      { key: 'nama_lengkap', label: 'Nama Lengkap Siswa' }, { key: 'nama_panggilan', label: 'Nama Panggilan' },
+      { key: 'jenis_kelamin', label: 'Jenis Kelamin' }, { key: 'tempat_lahir', label: 'Tempat Lahir' },
+      { key: 'tanggal_lahir', label: 'Tanggal Lahir' }, { key: 'agama', label: 'Agama' },
+      { key: 'kewarganegaraan', label: 'Kewarganegaraan' }, { key: 'anak_ke', label: 'Anak Ke-' },
+      { key: 'jml_saudara_kandung', label: 'Jml Saudara Kandung' }, { key: 'jml_saudara_tiri', label: 'Jml Saudara Tiri' },
+      { key: 'jml_saudara_angkat', label: 'Jml Saudara Angkat' }, { key: 'status_yatim', label: 'Status Yatim/Piatu' },
+      { key: 'bahasa_sehari', label: 'Bahasa Sehari-hari' }, { key: 'alamat', label: 'Alamat Lengkap' },
+      { key: 'no_hp', label: 'No. Telp / HP Siswa' }, { key: 'tinggal_dengan', label: 'Tinggal Dengan' },
+      { key: 'jarak_sekolah', label: 'Jarak ke Sekolah' }, { key: 'transportasi', label: 'Transportasi' },
+      { key: 'kepemilikan_rumah', label: 'Kepemilikan Rumah' }, { key: 'bangunan_rumah', label: 'Bangunan Rumah' },
+      { key: 'lantai_rumah', label: 'Jenis Lantai' }, { key: 'jml_anggota_keluarga', label: 'Jml Anggota Keluarga' },
+      { key: 'golongan_darah', label: 'Golongan Darah' }, { key: 'tinggi_badan', label: 'Tinggi Badan (cm)' },
+      { key: 'berat_badan', label: 'Berat Badan (kg)' }, { key: 'riwayat_penyakit', label: 'Penyakit Pernah Diderita' },
+      { key: 'kelainan_jasmani', label: 'Kelainan Jasmani' }, { key: 'pendidikan_sebelumnya', label: 'Pendidikan Sebelumnya' },
+      { key: 'smp_asal', label: 'SMP / MTs Asal' }, { key: 'tgl_ijazah', label: 'Tanggal STTB/Ijazah' },
+      { key: 'no_ijazah', label: 'Nomor STTB/Ijazah' }, { key: 'tgl_skhun', label: 'Tanggal SKHUN' },
+      { key: 'no_skhun', label: 'Nomor SKHUN' }, { key: 'lama_belajar', label: 'Lama Belajar' },
+      { key: 'ayah_nama', label: 'Nama Ayah' }, { key: 'ayah_status', label: 'Status Ayah' },
+      { key: 'ayah_tempat_lahir', label: 'Tempat Lahir Ayah' }, { key: 'ayah_tgl_lahir', label: 'Tgl Lahir Ayah' },
+      { key: 'ayah_agama', label: 'Agama Ayah' }, { key: 'ayah_kewarganegaraan', label: 'Kewarganegaraan Ayah' },
+      { key: 'ayah_pendidikan', label: 'Pendidikan Ayah' }, { key: 'ayah_pekerjaan', label: 'Pekerjaan Ayah' },
+      { key: 'ayah_penghasilan', label: 'Penghasilan Ayah' }, { key: 'ayah_alamat_hp', label: 'Alamat & HP Ayah' },
+      { key: 'ibu_nama', label: 'Nama Ibu' }, { key: 'ibu_status', label: 'Status Ibu' },
+      { key: 'ibu_tempat_lahir', label: 'Tempat Lahir Ibu' }, { key: 'ibu_tgl_lahir', label: 'Tgl Lahir Ibu' },
+      { key: 'ibu_agama', label: 'Agama Ibu' }, { key: 'ibu_kewarganegaraan', label: 'Kewarganegaraan Ibu' },
+      { key: 'ibu_pendidikan', label: 'Pendidikan Ibu' }, { key: 'ibu_pekerjaan', label: 'Pekerjaan Ibu' },
+      { key: 'ibu_penghasilan', label: 'Penghasilan Ibu' }, { key: 'ibu_alamat_hp', label: 'Alamat & HP Ibu' },
+      { key: 'wali_nama', label: 'Nama Wali' }, { key: 'wali_status', label: 'Status Wali' },
+      { key: 'wali_tempat_lahir', label: 'Tempat Lahir Wali' }, { key: 'wali_tgl_lahir', label: 'Tgl Lahir Wali' },
+      { key: 'wali_agama', label: 'Agama Wali' }, { key: 'wali_kewarganegaraan', label: 'Kewarganegaraan Wali' },
+      { key: 'wali_pendidikan', label: 'Pendidikan Wali' }, { key: 'wali_pekerjaan', label: 'Pekerjaan Wali' },
+      { key: 'wali_penghasilan', label: 'Penghasilan Wali' }, { key: 'wali_alamat_hp', label: 'Alamat & HP Wali' },
+      { key: 'hobi_kesenian', label: 'Kegemaran Kesenian' }, { key: 'hobi_olahraga', label: 'Kegemaran Olahraga' },
+      { key: 'hobi_organisasi', label: 'Organisasi' }, { key: 'hobi_lain', label: 'Kegemaran Lain' },
+      { key: 'beasiswa_1', label: 'Beasiswa 1' }, { key: 'beasiswa_2', label: 'Beasiswa 2' }, { key: 'beasiswa_3', label: 'Beasiswa 3' }
+    ];
+
+    function bukaEdit(rowNumber) {
+      const s = allStudents.find(item => item.rowNumber === rowNumber);
+      if (!s) return;
+
+      document.getElementById('editRowNumber').value = rowNumber;
+      const container = document.getElementById('editFieldsContainer');
+      container.innerHTML = editableFields.map(f => `
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">${f.label}</label>
+          <input type="text" name="${f.key}" value="${(s[f.key] || '').replace(/"/g, '&quot;')}"
+            class="w-full border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-500">
+        </div>
+      `).join('');
+
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function simpanEdit(e) {
+      e.preventDefault();
+      const rowNumber = parseInt(document.getElementById('editRowNumber').value);
+      const formData = new FormData(document.getElementById('editForm'));
+      const updatedData = {};
+      formData.forEach((val, key) => updatedData[key] = val);
+
+      const btn = document.getElementById('saveEditBtn');
+      btn.disabled = true;
+      btn.innerText = 'Menyimpan...';
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'update',
+          password: adminPassword,
+          rowNumber: rowNumber,
+          data: updatedData
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        btn.disabled = false;
+        btn.innerText = 'Simpan Perubahan';
+        if (res.status === 'success') {
+          tutupModal('editModal');
+          Swal.fire('Berhasil', res.message, 'success');
+          muatData();
+        } else {
+          Swal.fire('Gagal', res.message, 'error');
+        }
+      })
+      .catch(() => {
+        btn.disabled = false;
+        btn.innerText = 'Simpan Perubahan';
+        Swal.fire('Error', 'Gagal menyimpan perubahan.', 'error');
+      });
+    }
+
+    function konfirmasiHapus(rowNumber, nisn, nama) {
+      Swal.fire({
+        title: 'Hapus Data Siswa?',
+        html: `Anda yakin ingin menghapus biodata <strong>${nama}</strong> (NISN: ${nisn})?<br><span class="text-xs text-rose-600">Data di Spreadsheet juga akan terhapus permanen.</span>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e11d48',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+      }).then(result => {
+        if (result.isConfirmed) {
+          fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              action: 'delete',
+              password: adminPassword,
+              rowNumber: rowNumber,
+              nisn: nisn
+            })
+          })
+          .then(r => r.json())
+          .then(res => {
+            if (res.status === 'success') {
+              Swal.fire('Terhapus', res.message, 'success');
+              muatData();
+            } else {
+              Swal.fire('Gagal', res.message, 'error');
+            }
+          });
+        }
+      });
+    }
+
+    function exportCSV() {
+      if (filteredStudents.length === 0) {
+        Swal.fire('Kosong', 'Tidak ada data untuk diunduh.', 'info');
+        return;
+      }
+
+      const headers = ['Waktu Input', ...editableFields.map(f => f.label)];
+      const rows = filteredStudents.map(s => {
+        const vals = [s.waktu_input, ...editableFields.map(f => {
+          let v = String(s[f.key] || '').replace(/"/g, '""');
+          if ((f.key === 'nisn' || f.key === 'no_hp') && v) return `="${v}"`;
+          return `"${v}"`;
+        })];
+        return vals.join(',');
+      });
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Rekap_Biodata_Siswa_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    function tutupModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
