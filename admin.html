@@ -8,9 +8,12 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <style id="dynamicPageStyle">
+    @page { size: 215mm 330mm; margin: 10mm 12mm; }
+  </style>
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
-    .modal-backdrop { background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(4px); }
+    .modal-backdrop { background-color: rgba(15, 23, 42, 0.75); backdrop-filter: blur(5px); }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(14px); }
@@ -19,10 +22,10 @@
     .animate-fade-up { animation: fadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
     @keyframes modalPop {
-      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      from { opacity: 0; transform: scale(0.96) translateY(10px); }
       to { opacity: 1; transform: scale(1) translateY(0); }
     }
-    .animate-modal { animation: modalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .animate-modal { animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
@@ -31,14 +34,82 @@
     }
     .animate-shake { animation: shake 0.4s ease-in-out; }
 
-    /* Aturan Cetak Blangko A4 / PDF */
+    /* Simulasi Lembar Kertas Resmi di Layar */
+    .paper-sheet {
+      font-family: "Times New Roman", Times, Georgia, serif;
+      width: 215mm;
+      min-height: 330mm;
+      background: #ffffff;
+      color: #000000;
+      padding: 12mm 15mm;
+      margin: 0 auto;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+      font-size: 10.5pt;
+      line-height: 1.28;
+    }
+    .paper-sheet.size-a4 {
+      width: 210mm;
+      min-height: 297mm;
+    }
+    .paper-sheet.compact-mode {
+      font-size: 9.2pt;
+      line-height: 1.18;
+      padding: 9mm 13mm;
+    }
+    .paper-sheet table { border-collapse: collapse; width: 100%; }
+    .paper-sheet td { padding: 1.5px 2px; vertical-align: top; }
+    .paper-sheet.compact-mode td { padding: 1px 2px; }
+
+    .sec-title {
+      font-weight: bold;
+      text-transform: uppercase;
+      background-color: #f1f5f9;
+      border-top: 1px solid #000;
+      border-bottom: 1px solid #000;
+      padding: 2.5px 6px;
+      margin-top: 7px;
+      margin-bottom: 3px;
+      font-size: 9.5pt;
+      letter-spacing: 0.3px;
+    }
+    .paper-sheet.compact-mode .sec-title {
+      margin-top: 5px;
+      margin-bottom: 2px;
+      padding: 1.5px 5px;
+      font-size: 8.8pt;
+    }
+
+    /* Aturan Khusus Saat Dicetak ke Printer / Simpan PDF */
     @media print {
+      body { background: #ffffff !important; margin: 0 !important; padding: 0 !important; }
       body * { visibility: hidden; }
+      #detailModal {
+        position: static !important;
+        display: block !important;
+        background: none !important;
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+      #detailModalWrapper {
+        box-shadow: none !important;
+        max-height: none !important;
+        overflow: visible !important;
+        background: none !important;
+      }
+      #paperViewport {
+        padding: 0 !important;
+        overflow: visible !important;
+        background: none !important;
+      }
       #printArea, #printArea * { visibility: visible; }
       #printArea {
-        position: absolute; left: 0; top: 0; width: 100%;
-        background: white !important; padding: 0 !important; margin: 0 !important;
+        width: 100% !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
         box-shadow: none !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
       }
       .no-print { display: none !important; }
     }
@@ -84,7 +155,7 @@
   <div id="dashboardScreen" class="hidden min-h-screen flex flex-col">
     
     <!-- Top Navbar -->
-    <header class="bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 text-white px-4 sm:px-8 py-4 shadow-lg sticky top-0 z-30">
+    <header class="no-print bg-gradient-to-r from-slate-950 via-blue-950 to-indigo-950 text-white px-4 sm:px-8 py-4 shadow-lg sticky top-0 z-30">
       <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300">
@@ -96,7 +167,10 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="lihatContohBlangko()" class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-3.5 py-2.5 rounded-xl shadow transition">
+            <i data-lucide="file-check-2" class="w-4 h-4"></i> Contoh Cetak
+          </button>
           <a id="openSheetBtn" href="#" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2.5 rounded-xl shadow transition">
             <i data-lucide="table" class="w-4 h-4"></i> Spreadsheet
           </a>
@@ -110,9 +184,9 @@
       </div>
     </header>
 
-    <main class="max-w-7xl w-full mx-auto p-4 sm:p-8 flex-1 space-y-6">
+    <main class="no-print max-w-7xl w-full mx-auto p-4 sm:p-8 flex-1 space-y-6">
 
-      <!-- Kartu Statistik Beranimasi -->
+      <!-- Kartu Statistik -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-up">
         <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition-all">
           <div class="flex items-center justify-between">
@@ -195,25 +269,54 @@
     </main>
   </div>
 
-  <!-- ================= MODAL 1: DETAIL & CETAK BLANGKO ================= -->
-  <div id="detailModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-    <div class="bg-white max-w-4xl w-full rounded-3xl shadow-2xl overflow-hidden my-auto max-h-[92vh] flex flex-col animate-modal">
-      <div class="no-print bg-slate-900 text-white px-6 py-4 flex justify-between items-center">
+  <!-- ================= MODAL 1: PRATINJAU KERTAS & CETAK BLANGKO ================= -->
+  <div id="detailModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-2 sm:p-4">
+    <div id="detailModalWrapper" class="bg-slate-800 w-full max-w-6xl rounded-3xl shadow-2xl overflow-hidden max-h-[95vh] flex flex-col animate-modal">
+      
+      <!-- Toolbar Kontrol Cetak -->
+      <div class="no-print bg-slate-950 text-white px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800">
         <div class="flex items-center gap-2.5">
-          <i data-lucide="file-text" class="w-5 h-5 text-blue-400"></i>
-          <h3 class="font-bold text-sm sm:text-base">Pratinjau Blangko Data Diri Siswa</h3>
+          <div class="p-2 bg-blue-600/20 text-blue-400 rounded-xl">
+            <i data-lucide="printer" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm sm:text-base">Pratinjau Cetak Blangko Resmi</h3>
+            <p class="text-[11px] text-slate-400">Tampilan pada kertas di bawah ini sesuai dengan hasil cetak / PDF</p>
+          </div>
         </div>
-        <div class="flex gap-2">
-          <button onclick="window.print()" class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-xl transition">
-            <i data-lucide="printer" class="w-4 h-4"></i> Cetak / PDF
+
+        <!-- Pengaturan Kertas & Kop Sekolah -->
+        <div class="flex flex-wrap items-center gap-2">
+          <input type="text" id="inputKopSekolah" oninput="updateKopPreview()" placeholder="Nama Sekolah (Opsional)"
+            class="bg-slate-900 border border-slate-700 text-white text-xs rounded-xl px-3 py-2 w-44 focus:outline-none focus:border-blue-500">
+          
+          <input type="text" id="inputTahunAjaran" oninput="updateKopPreview()" placeholder="Th. Pelajaran (2026/2027)"
+            class="bg-slate-900 border border-slate-700 text-white text-xs rounded-xl px-3 py-2 w-40 focus:outline-none focus:border-blue-500">
+
+          <select id="paperSizeSelect" onchange="ubahUkuranKertas()"
+            class="bg-slate-900 border border-slate-700 text-white text-xs font-semibold rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500">
+            <option value="f4-compact">Kertas F4 (1 Halaman Padat)</option>
+            <option value="f4-normal">Kertas F4 (Standar)</option>
+            <option value="a4-compact">Kertas A4 (1 Halaman Padat)</option>
+            <option value="a4-normal">Kertas A4 (Standar)</option>
+          </select>
+
+          <button onclick="window.print()" class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-xl shadow-lg shadow-blue-600/30 transition">
+            <i data-lucide="printer" class="w-4 h-4"></i> Cetak / Simpan PDF
           </button>
-          <button onclick="tutupModal('detailModal')" class="bg-slate-800 hover:bg-slate-700 text-white text-xs sm:text-sm px-3.5 py-2 rounded-xl transition">
+
+          <button onclick="tutupModal('detailModal')" class="bg-slate-800 hover:bg-rose-600 text-white text-xs sm:text-sm font-bold px-3 py-2 rounded-xl transition">
             ✕
           </button>
         </div>
       </div>
       
-      <div id="printArea" class="p-6 sm:p-10 overflow-y-auto text-xs sm:text-sm text-black leading-relaxed"></div>
+      <!-- Meja Pratinjau Lembar Kertas -->
+      <div id="paperViewport" class="flex-1 overflow-auto bg-slate-700/90 p-4 sm:p-8">
+        <div id="printArea" class="paper-sheet compact-mode">
+          <!-- Lembar Blangko dirender di sini -->
+        </div>
+      </div>
     </div>
   </div>
 
@@ -252,8 +355,13 @@
     let adminPassword = sessionStorage.getItem('admin_pwd') || '';
     let allStudents = [];
     let filteredStudents = [];
+    let activePreviewStudent = null;
 
     window.onload = function() {
+      // Muat preferensi kop sekolah jika pernah diisi
+      document.getElementById('inputKopSekolah').value = localStorage.getItem('kop_nama_sekolah') || '';
+      document.getElementById('inputTahunAjaran').value = localStorage.getItem('kop_tahun_ajaran') || '2026/2027';
+
       if (adminPassword) {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('dashboardScreen').classList.remove('hidden');
@@ -425,13 +533,13 @@
           <td class="py-3.5 px-4 text-slate-600 font-mono text-xs">${s.no_hp}</td>
           <td class="py-3.5 px-4">
             <div class="flex items-center justify-center gap-1.5">
-              <button onclick="lihatBlangko(${s.rowNumber})" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-sm transition" title="Lihat & Cetak Blangko">
-                Detail
+              <button onclick="lihatBlangko(${s.rowNumber})" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold shadow-sm transition">
+                🖨️ Cetak
               </button>
-              <button onclick="bukaEdit(${s.rowNumber})" class="bg-amber-500 hover:bg-amber-400 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-sm transition" title="Edit Data">
+              <button onclick="bukaEdit(${s.rowNumber})" class="bg-amber-500 hover:bg-amber-400 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-sm transition">
                 Edit
               </button>
-              <button onclick="konfirmasiHapus(${s.rowNumber}, '${s.nisn}', '${s.nama_lengkap.replace(/'/g, "\\'")}')" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-sm transition" title="Hapus Data">
+              <button onclick="konfirmasiHapus(${s.rowNumber}, '${s.nisn}', '${s.nama_lengkap.replace(/'/g, "\\'")}')" class="bg-rose-600 hover:bg-rose-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-sm transition">
                 Hapus
               </button>
             </div>
@@ -440,105 +548,289 @@
       }).join('');
     }
 
-    function lihatBlangko(rowNumber) {
-      const s = allStudents.find(item => item.rowNumber === rowNumber);
-      if (!s) return;
+    // ================= PRATINJAU & CETAK BLANGKO RESMI =================
+    function ubahUkuranKertas() {
+      const mode = document.getElementById('paperSizeSelect').value;
+      const area = document.getElementById('printArea');
+      const styleTag = document.getElementById('dynamicPageStyle');
 
-      const rowItem = (label, val) => `
-        <tr>
-          <td class="py-1 w-64 align-top">${label}</td>
-          <td class="py-1 w-4 align-top">:</td>
-          <td class="py-1 font-medium">${val || '-'}</td>
-        </tr>`;
+      area.classList.remove('size-a4', 'compact-mode');
+      if (mode.startsWith('a4')) {
+        area.classList.add('size-a4');
+        styleTag.innerHTML = '@page { size: A4 portrait; margin: 10mm 12mm; }';
+      } else {
+        styleTag.innerHTML = '@page { size: 215mm 330mm; margin: 10mm 12mm; }';
+      }
 
-      document.getElementById('printArea').innerHTML = `
-        <div class="border-b-2 border-black pb-3 mb-4 text-center">
-          <h2 class="text-lg font-bold uppercase tracking-wide">BLANGKO DATA DIRI SISWA</h2>
-          <p class="text-xs text-slate-600">Waktu Pengisian: ${s.waktu_input}</p>
-        </div>
+      if (mode.endsWith('compact')) {
+        area.classList.add('compact-mode');
+      }
+    }
 
-        <table class="w-full mb-4 bg-slate-50 p-2 border border-slate-300">
-          ${rowItem('<strong>NAMA SISWA</strong>', `<strong>${s.nama_lengkap}</strong>`)}
-          ${rowItem('<strong>KELAS / JURUSAN</strong>', s.kelas_jurusan)}
-          ${rowItem('<strong>NISN</strong>', s.nisn)}
-        </table>
+    function updateKopPreview() {
+      const sekolah = document.getElementById('inputKopSekolah').value;
+      const tahun = document.getElementById('inputTahunAjaran').value;
+      localStorage.setItem('kop_nama_sekolah', sekolah);
+      localStorage.setItem('kop_tahun_ajaran', tahun);
+      if (activePreviewStudent) {
+        renderBlangkoHTML(activePreviewStudent);
+      }
+    }
 
-        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">I. Keterangan Tentang Diri Siswa</h4>
-        <table class="w-full">
-          ${rowItem('1. Nama Lengkap Siswa', s.nama_lengkap)}
-          ${rowItem('2. Nama Panggilan', s.nama_panggilan)}
-          ${rowItem('3. Jenis Kelamin', s.jenis_kelamin)}
-          ${rowItem('4. Tempat / Tanggal Lahir', `${s.tempat_lahir}, ${s.tanggal_lahir}`)}
-          ${rowItem('5. Agama', s.agama)}
-          ${rowItem('6. Kewarganegaraan', s.kewarganegaraan)}
-          ${rowItem('7. Anak ke-berapa', s.anak_ke)}
-          ${rowItem('8. Jumlah Saudara', `Kandung: ${s.jml_saudara_kandung} | Tiri: ${s.jml_saudara_tiri} | Angkat: ${s.jml_saudara_angkat}`)}
-          ${rowItem('9. Anak Yatim/Piatu/Yatim Piatu', s.status_yatim)}
-          ${rowItem('10. Bahasa Sehari-hari', s.bahasa_sehari)}
-        </table>
-
-        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">II. Keterangan Tempat Tinggal & Rumah</h4>
-        <table class="w-full">
-          ${rowItem('11. Alamat Lengkap', s.alamat)}
-          ${rowItem('12. No. Telp / HP', s.no_hp)}
-          ${rowItem('13. Tinggal Dengan', s.tinggal_dengan)}
-          ${rowItem('14. Jarak Tempat Tinggal ke Sekolah', s.jarak_sekolah)}
-          ${rowItem('15. Alat Transportasi ke Sekolah', s.transportasi)}
-          ${rowItem('16. Kepemilikan / Bangunan / Lantai', `${s.kepemilikan_rumah} / ${s.bangunan_rumah} / Lantai ${s.lantai_rumah}`)}
-          ${rowItem('17. Jumlah Anggota Keluarga', `${s.jml_anggota_keluarga} orang`)}
-        </table>
-
-        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">III. Keterangan Kesehatan & Pendidikan</h4>
-        <table class="w-full">
-          ${rowItem('18. Golongan Darah / Tinggi / Berat', `Gol. ${s.golongan_darah} | TB: ${s.tinggi_badan} cm | BB: ${s.berat_badan} kg`)}
-          ${rowItem('19. Penyakit Pernah Diderita', s.riwayat_penyakit)}
-          ${rowItem('20. Kelainan Jasmani', s.kelainan_jasmani)}
-          ${rowItem('21. Pendidikan Sebelumnya / Asal', `${s.pendidikan_sebelumnya} - ${s.smp_asal} (Lama belajar: ${s.lama_belajar})`)}
-          ${rowItem('22. Tgl & No. STTB / Ijazah', `${s.tgl_ijazah} / No: ${s.no_ijazah}`)}
-          ${rowItem('23. Tgl & No. SKHUN', `${s.tgl_skhun || '-'} / No: ${s.no_skhun}`)}
-        </table>
-
-        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">IV. Keterangan Ayah Kandung</h4>
-        <table class="w-full">
-          ${rowItem('24. Nama Ayah / Status', `${s.ayah_nama} (${s.ayah_status})`)}
-          ${rowItem('25. Tempat / Tgl Lahir Ayah', `${s.ayah_tempat_lahir}, ${s.ayah_tgl_lahir}`)}
-          ${rowItem('26. Agama / Kewarganegaraan', `${s.ayah_agama} / ${s.ayah_kewarganegaraan}`)}
-          ${rowItem('27. Pendidikan / Pekerjaan', `${s.ayah_pendidikan} / ${s.ayah_pekerjaan}`)}
-          ${rowItem('28. Penghasilan Per Bulan', s.ayah_penghasilan)}
-          ${rowItem('29. Alamat & No. Telp/HP Ayah', s.ayah_alamat_hp)}
-        </table>
-
-        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">V. Keterangan Ibu Kandung</h4>
-        <table class="w-full">
-          ${rowItem('30. Nama Ibu / Status', `${s.ibu_nama} (${s.ibu_status})`)}
-          ${rowItem('31. Tempat / Tgl Lahir Ibu', `${s.ibu_tempat_lahir}, ${s.ibu_tgl_lahir}`)}
-          ${rowItem('32. Agama / Kewarganegaraan', `${s.ibu_agama} / ${s.ibu_kewarganegaraan}`)}
-          ${rowItem('33. Pendidikan / Pekerjaan', `${s.ibu_pendidikan} / ${s.ibu_pekerjaan}`)}
-          ${rowItem('34. Penghasilan/Pengeluaran Per Bulan', s.ibu_penghasilan)}
-          ${rowItem('35. Alamat & No. Telp/HP Ibu', s.ibu_alamat_hp)}
-        </table>
-
-        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">VI. Keterangan Wali</h4>
-        <table class="w-full">
-          ${rowItem('36. Nama Wali / Status', `${s.wali_nama} (${s.wali_status})`)}
-          ${rowItem('37. Tempat / Tgl Lahir Wali', `${s.wali_tempat_lahir}, ${s.wali_tgl_lahir}`)}
-          ${rowItem('38. Pendidikan / Pekerjaan Wali', `${s.wali_pendidikan} / ${s.wali_pekerjaan}`)}
-          ${rowItem('39. Alamat & No. HP Wali', s.wali_alamat_hp)}
-        </table>
-
-        <h4 class="font-bold uppercase border-b border-black mt-4 mb-2">VII. Kegemaran & Riwayat Beasiswa</h4>
-        <table class="w-full">
-          ${rowItem('40. Kesenian / Olahraga', `${s.hobi_kesenian} / ${s.hobi_olahraga}`)}
-          ${rowItem('41. Organisasi / Lain-lain', `${s.hobi_organisasi} / ${s.hobi_lain}`)}
-          ${rowItem('42. Beasiswa 1', s.beasiswa_1)}
-          ${rowItem('43. Beasiswa 2', s.beasiswa_2)}
-          ${rowItem('44. Beasiswa 3', s.beasiswa_3)}
-        </table>
-      `;
-
+    function lihatContohBlangko() {
+      const sampleStudent = {
+        nisn: '0089123456',
+        nama_lengkap: 'AHMAD RIZKY PRATAMA',
+        nama_panggilan: 'Rizky',
+        kelas_jurusan: 'X TKJ 1',
+        jenis_kelamin: 'Laki-laki',
+        tempat_lahir: 'Bandung',
+        tanggal_lahir: '2010-05-14',
+        agama: 'Islam',
+        kewarganegaraan: 'Indonesia',
+        anak_ke: '1',
+        jml_saudara_kandung: '2',
+        jml_saudara_tiri: '0',
+        jml_saudara_angkat: '0',
+        status_yatim: 'Lengkap (Masih Hidup Semua)',
+        bahasa_sehari: 'Bahasa Indonesia & Sunda',
+        alamat: 'Jl. Merdeka No. 45 RT 03/RW 05, Kel. Sukamaju, Kec. Cibeunying, Kota Bandung',
+        no_hp: '081234567890',
+        tinggal_dengan: 'Orang Tua Kandung',
+        jarak_sekolah: '2,5 km',
+        transportasi: 'Sepeda Motor',
+        kepemilikan_rumah: 'Sendiri',
+        bangunan_rumah: 'Tembok (Permanen)',
+        lantai_rumah: 'Keramik',
+        jml_anggota_keluarga: '4',
+        golongan_darah: 'O',
+        riwayat_penyakit: 'Tidak ada',
+        kelainan_jasmani: 'Tidak ada',
+        tinggi_badan: '168',
+        berat_badan: '56',
+        pendidikan_sebelumnya: 'SMP',
+        smp_asal: 'SMP Negeri 1 Bandung',
+        tgl_ijazah: '2026-06-15',
+        no_ijazah: 'DN-02 Dd 0458912',
+        tgl_skhun: '-',
+        no_skhun: '-',
+        lama_belajar: '3 Tahun',
+        ayah_nama: 'Budi Santoso, S.Pd.',
+        ayah_tempat_lahir: 'Garut',
+        ayah_tgl_lahir: '1980-08-12',
+        ayah_agama: 'Islam',
+        ayah_kewarganegaraan: 'Indonesia',
+        ayah_pendidikan: 'S1 / D4',
+        ayah_pekerjaan: 'Pegawai Negeri Sipil (PNS)',
+        ayah_penghasilan: 'Rp 2.500.000 - Rp 5.000.000',
+        ayah_alamat_hp: 'Jl. Merdeka No. 45 Bandung / 081222333444',
+        ayah_status: 'Masih Hidup',
+        ibu_nama: 'Siti Aminah',
+        ibu_tempat_lahir: 'Bandung',
+        ibu_tgl_lahir: '1983-11-20',
+        ibu_agama: 'Islam',
+        ibu_kewarganegaraan: 'Indonesia',
+        ibu_pendidikan: 'SMA / SMK / Sederajat',
+        ibu_pekerjaan: 'Ibu Rumah Tangga',
+        ibu_penghasilan: 'Tidak Berpenghasilan',
+        ibu_alamat_hp: 'Jl. Merdeka No. 45 Bandung / 081333444555',
+        ibu_status: 'Masih Hidup',
+        wali_nama: '-',
+        wali_tempat_lahir: '-',
+        wali_tgl_lahir: '-',
+        wali_agama: '-',
+        wali_kewarganegaraan: '-',
+        wali_pendidikan: '-',
+        wali_pekerjaan: '-',
+        wali_penghasilan: '-',
+        wali_alamat_hp: '-',
+        wali_status: '-',
+        hobi_kesenian: 'Gitar & Paduan Suara',
+        hobi_olahraga: 'Futsal & Bulu Tangkis',
+        hobi_organisasi: 'OSIS & Pramuka',
+        hobi_lain: 'Desain Grafis',
+        beasiswa_1: 'Tahun: 2025 | TK: SMP Kelas IX | Dari: Program Indonesia Pintar (PIP)',
+        beasiswa_2: '-',
+        beasiswa_3: '-'
+      };
+      activePreviewStudent = sampleStudent;
+      renderBlangkoHTML(sampleStudent);
       document.getElementById('detailModal').classList.remove('hidden');
     }
 
+    function lihatBlangko(rowNumber) {
+      const s = allStudents.find(item => item.rowNumber === rowNumber);
+      if (!s) return;
+      activePreviewStudent = s;
+      renderBlangkoHTML(s);
+      document.getElementById('detailModal').classList.remove('hidden');
+    }
+
+    function formatTanggalIndo(tglStr) {
+      if (!tglStr || tglStr === '-') return '-';
+      const parts = tglStr.split('-');
+      if (parts.length !== 3) return tglStr;
+      const bulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+      const m = parseInt(parts[1], 10) - 1;
+      return `${parts[2]} ${bulan[m] || parts[1]} ${parts[0]}`;
+    }
+
+    function renderBlangkoHTML(s) {
+      const namaSekolah = document.getElementById('inputKopSekolah').value.trim();
+      const tahunAjaran = document.getElementById('inputTahunAjaran').value.trim();
+
+      const row = (label, val) => `
+        <tr>
+          <td style="width: 38%; padding-left: 8px;">${label}</td>
+          <td style="width: 2%;">:</td>
+          <td style="width: 60%;"><strong>${val || '-'}</strong></td>
+        </tr>`;
+
+      const rowPlain = (label, val) => `
+        <tr>
+          <td style="width: 38%; padding-left: 8px;">${label}</td>
+          <td style="width: 2%;">:</td>
+          <td style="width: 60%;">${val || '-'}</td>
+        </tr>`;
+
+      const tglCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      document.getElementById('printArea').innerHTML = `
+        <!-- JUDUL DOKUMEN -->
+        <div style="text-align: center; border-bottom: 2.5px double #000; padding-bottom: 6px; margin-bottom: 8px;">
+          ${namaSekolah ? `<div style="font-size: 13pt; font-weight: bold; text-transform: uppercase;">${namaSekolah}</div>` : ''}
+          <div style="font-size: 12.5pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">BLANGKO DATA DIRI SISWA</div>
+          ${tahunAjaran ? `<div style="font-size: 9.5pt;">Tahun Pelajaran ${tahunAjaran}</div>` : ''}
+        </div>
+
+        <!-- KOTAK IDENTITAS UTAMA ATAS -->
+        <table style="border: 1.5px solid #000; margin-bottom: 6px; background-color: #f8fafc;">
+          <tr>
+            <td style="width: 22%; padding: 3px 8px; font-weight: bold;">NAMA SISWA</td>
+            <td style="width: 2%; padding: 3px 0; font-weight: bold;">:</td>
+            <td style="width: 76%; padding: 3px 8px; font-weight: bold; text-transform: uppercase;">${s.nama_lengkap || '-'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 3px 8px; font-weight: bold; border-top: 1px solid #cbd5e1;">KELAS / JURUSAN</td>
+            <td style="padding: 3px 0; font-weight: bold; border-top: 1px solid #cbd5e1;">:</td>
+            <td style="padding: 3px 8px; font-weight: bold; border-top: 1px solid #cbd5e1;">${s.kelas_jurusan || '-'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 3px 8px; font-weight: bold; border-top: 1px solid #cbd5e1;">NISN</td>
+            <td style="padding: 3px 0; font-weight: bold; border-top: 1px solid #cbd5e1;">:</td>
+            <td style="padding: 3px 8px; font-weight: bold; border-top: 1px solid #cbd5e1; font-family: 'Courier New', monospace;">${s.nisn || '-'}</td>
+          </tr>
+        </table>
+
+        <!-- A. KETERANGAN TENTANG DIRI SISWA -->
+        <div class="sec-title">A. Keterangan Tentang Diri Siswa</div>
+        <table>
+          ${row('1. Nama lengkap siswa', (s.nama_lengkap || '').toUpperCase())}
+          ${rowPlain('2. Nama Panggilan', s.nama_panggilan)}
+          ${rowPlain('3. Jenis Kelamin', s.jenis_kelamin)}
+          ${rowPlain('4. Tempat / Tanggal lahir', `${s.tempat_lahir || '-'}, ${formatTanggalIndo(s.tanggal_lahir)}`)}
+          ${rowPlain('5. Agama', s.agama)}
+          ${rowPlain('6. Kewarganegaraan', s.kewarganegaraan)}
+          ${rowPlain('7. Anak ke-berapa', s.anak_ke)}
+          ${rowPlain('8. Jumlah saudara kandung / tiri / angkat', `Kandung: ${s.jml_saudara_kandung || 0} org &nbsp;|&nbsp; Tiri: ${s.jml_saudara_tiri || 0} org &nbsp;|&nbsp; Angkat: ${s.jml_saudara_angkat || 0} org`)}
+          ${rowPlain('9. Anak yatim / piatu / yatim piatu', s.status_yatim)}
+          ${rowPlain('10. Bahasa sehari-hari', s.bahasa_sehari)}
+        </table>
+
+        <!-- B & C. KETERANGAN TEMPAT TINGGAL & RUMAH -->
+        <div class="sec-title">B. Keterangan Tempat Tinggal & Kondisi Rumah</div>
+        <table>
+          ${rowPlain('11. Alamat lengkap', s.alamat)}
+          ${rowPlain('12. No. Telp / HP', s.no_hp)}
+          ${rowPlain('13. Tinggal dengan', s.tinggal_dengan)}
+          ${rowPlain('14. Jarak tempat tinggal ke sekolah', s.jarak_sekolah)}
+          ${rowPlain('15. Alat transportasi ke sekolah', s.transportasi)}
+          ${rowPlain('16. Kepemilikan / Bangunan / Lantai rumah', `${s.kepemilikan_rumah || '-'} &nbsp;/&nbsp; ${s.bangunan_rumah || '-'} &nbsp;/&nbsp; Lantai ${s.lantai_rumah || '-'}`)}
+          ${rowPlain('17. Jumlah anggota keluarga', `${s.jml_anggota_keluarga || '-'} orang`)}
+        </table>
+
+        <!-- D & E. KETERANGAN KESEHATAN & PENDIDIKAN -->
+        <div class="sec-title">C. Keterangan Kesehatan & Pendidikan Sebelumnya</div>
+        <table>
+          ${rowPlain('18. Golongan darah / Tinggi / Berat badan', `Gol. ${s.golongan_darah || '-'} &nbsp;|&nbsp; TB: ${s.tinggi_badan || '-'} cm &nbsp;|&nbsp; BB: ${s.berat_badan || '-'} kg`)}
+          ${rowPlain('19. Penyakit yang pernah diderita', s.riwayat_penyakit)}
+          ${rowPlain('20. Kelainan jasmani', s.kelainan_jasmani)}
+          ${rowPlain('21. Pendidikan sebelumnya / Asal sekolah', `${s.pendidikan_sebelumnya || '-'} — ${s.smp_asal || '-'} (Lama belajar: ${s.lama_belajar || '-'})`)}
+          ${row('22. Tanggal dan No. STTB / Ijazah *)', `${formatTanggalIndo(s.tgl_ijazah)} &nbsp;/&nbsp; No: ${s.no_ijazah || '-'}`)}
+          ${rowPlain('23. Tanggal dan No. SKHUN *)', `${formatTanggalIndo(s.tgl_skhun)} &nbsp;/&nbsp; No: ${s.no_skhun || '-'}`)}
+        </table>
+
+        <!-- F. KETERANGAN TENTANG AYAH KANDUNG -->
+        <div class="sec-title">D. Keterangan Tentang Ayah Kandung</div>
+        <table>
+          ${row('24. Nama Ayah Kandung', `${s.ayah_nama || '-'} (${s.ayah_status || '-'})`)}
+          ${rowPlain('25. Tempat / Tanggal lahir', `${s.ayah_tempat_lahir || '-'}, ${formatTanggalIndo(s.ayah_tgl_lahir)}`)}
+          ${rowPlain('26. Agama / Kewarganegaraan', `${s.ayah_agama || '-'} &nbsp;/&nbsp; ${s.ayah_kewarganegaraan || '-'}`)}
+          ${rowPlain('27. Pendidikan / Pekerjaan', `${s.ayah_pendidikan || '-'} &nbsp;/&nbsp; ${s.ayah_pekerjaan || '-'}`)}
+          ${rowPlain('28. Penghasilan per bulan', s.ayah_penghasilan)}
+          ${rowPlain('29. Alamat rumah / No. Telp / HP', s.ayah_alamat_hp)}
+        </table>
+
+        <!-- G. KETERANGAN TENTANG IBU KANDUNG -->
+        <div class="sec-title">E. Keterangan Tentang Ibu Kandung</div>
+        <table>
+          ${row('30. Nama Ibu Kandung', `${s.ibu_nama || '-'} (${s.ibu_status || '-'})`)}
+          ${rowPlain('31. Tempat / Tanggal lahir', `${s.ibu_tempat_lahir || '-'}, ${formatTanggalIndo(s.ibu_tgl_lahir)}`)}
+          ${rowPlain('32. Agama / Kewarganegaraan', `${s.ibu_agama || '-'} &nbsp;/&nbsp; ${s.ibu_kewarganegaraan || '-'}`)}
+          ${rowPlain('33. Pendidikan / Pekerjaan', `${s.ibu_pendidikan || '-'} &nbsp;/&nbsp; ${s.ibu_pekerjaan || '-'}`)}
+          ${rowPlain('34. Penghasilan / Pengeluaran per bulan', s.ibu_penghasilan)}
+          ${rowPlain('35. Alamat rumah / No. Telp / HP', s.ibu_alamat_hp)}
+        </table>
+
+        <!-- H. KETERANGAN TENTANG WALI -->
+        <div class="sec-title">F. Keterangan Tentang Wali</div>
+        <table>
+          ${rowPlain('36. Nama Wali / Status', s.wali_nama && s.wali_nama !== '-' ? `${s.wali_nama} (${s.wali_status || '-'})` : '-')}
+          ${rowPlain('37. Tempat / Tanggal lahir', s.wali_tempat_lahir && s.wali_tempat_lahir !== '-' ? `${s.wali_tempat_lahir}, ${formatTanggalIndo(s.wali_tgl_lahir)}` : '-')}
+          ${rowPlain('38. Pendidikan / Pekerjaan', s.wali_pendidikan && s.wali_pendidikan !== '-' ? `${s.wali_pendidikan} / ${s.wali_pekerjaan || '-'}` : '-')}
+          ${rowPlain('39. Alamat rumah / No. Telp / HP', s.wali_alamat_hp)}
+        </table>
+
+        <!-- I & J. KEGEMARAN & PERKEMBANGAN SISWA -->
+        <div class="sec-title">G. Kegemaran Siswa & Riwayat Beasiswa</div>
+        <table>
+          ${rowPlain('40. Kesenian / Olahraga', `${s.hobi_kesenian || '-'} &nbsp;/&nbsp; ${s.hobi_olahraga || '-'}`)}
+          ${rowPlain('41. Kemasyarakatan (Organisasi) / Lain-lain', `${s.hobi_organisasi || '-'} &nbsp;/&nbsp; ${s.hobi_lain || '-'}`)}
+          ${rowPlain('42. Menerima Beasiswa', `1) ${s.beasiswa_1 || '-'}<br>2) ${s.beasiswa_2 || '-'}<br>3) ${s.beasiswa_3 || '-'}`)}
+        </table>
+
+        <!-- CATATAN PENTING BLANGKO ASLI -->
+        <div style="margin-top: 8px; border: 1px solid #000; padding: 4px 8px; font-size: 8pt; background-color: #f8fafc;">
+          <strong>PENGISIAN DATA HARUS DIISI DENGAN BENAR / SESUAI DENGAN IJAZAH SEBELUMNYA, DICEK DULU SEBELUM TERJADI KEKELIRUAN.</strong><br>
+          <em>NB: Nomor ijazah diisi dengan nomor yang ada di kanan bawah ijazah. Untuk SMP Negeri biasanya memakai kode DN-(Nomor), sedangkan untuk MTs biasanya dengan kode MTs-(Nomor).</em>
+        </div>
+
+        <!-- AREA FOTO 3x4 & TANDA TANGAN RESMI -->
+        <table style="margin-top: 10px; width: 100%;">
+          <tr>
+            <td style="width: 34%; text-align: center; vertical-align: bottom;">
+              Mengetahui,<br>
+              Orang Tua / Wali Siswa
+              <div style="height: 48px;"></div>
+              ( ................................................. )
+            </td>
+            <td style="width: 32%; text-align: center; vertical-align: middle;">
+              <div style="width: 28mm; height: 36mm; border: 1px solid #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 8.5pt; color: #475569;">
+                Pas Foto<br>3 x 4
+              </div>
+            </td>
+            <td style="width: 34%; text-align: center; vertical-align: bottom;">
+              ............................., ${tglCetak}<br>
+              Siswa yang bersangkutan,
+              <div style="height: 48px;"></div>
+              <strong>( ${s.nama_lengkap || '.....................................'} )</strong>
+            </td>
+          </tr>
+        </table>
+      `;
+    }
+
+    // ================= EDIT DATA SISWA =================
     const editableFields = [
       { key: 'nisn', label: 'NISN' }, { key: 'kelas_jurusan', label: 'Kelas / Jurusan' },
       { key: 'nama_lengkap', label: 'Nama Lengkap Siswa' }, { key: 'nama_panggilan', label: 'Nama Panggilan' },
