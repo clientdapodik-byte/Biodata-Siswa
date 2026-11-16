@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blangko Data Diri Siswa</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+    .step-section { display: none; }
+    .step-section.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    label { font-weight: 500; font-size: 0.875rem; color: #334155; display: block; margin-bottom: 0.25rem; }
+    .req::after { content: " *"; color: #ef4444; }
+    input[type="text"], input[type="number"], input[type="date"], select, textarea {
+      width: 100%; border: 1px solid #cbd5e1; border-radius: 0.5rem;
+      padding: 0.55rem 0.75rem; font-size: 0.9rem; background-color: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+  </style>
+</head>
+<body class="py-6 px-3 sm:px-6">
+
+  <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
+    
+    <!-- Header -->
+    <div class="bg-blue-900 text-white px-6 py-6 sm:px-8">
+      <h1 class="text-xl sm:text-2xl font-bold tracking-tight">BLANGKO DATA DIRI SISWA</h1>
+      <p class="text-blue-200 text-sm mt-1">Isi seluruh data dengan benar sesuai dengan Ijazah / Akta Kelahiran / Kartu Keluarga.</p>
+      
+      <!-- Progress Bar -->
+      <div class="mt-6">
+        <div class="flex justify-between text-xs font-medium text-blue-200 mb-2">
+          <span id="step-label">Langkah 1 dari 5: Keterangan Diri Siswa</span>
+          <span id="step-percent">20%</span>
+        </div>
+        <div class="w-full bg-blue-950 rounded-full h-2.5">
+          <div id="progress-bar" class="bg-amber-400 h-2.5 rounded-full transition-all duration-300" style="width: 20%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Peringatan Penting -->
+    <div class="bg-amber-50 border-b border-amber-200 px-6 py-3 text-xs sm:text-sm text-amber-900 flex items-start gap-2.5">
+      <span class="font-bold text-amber-600 text-base">⚠️</span>
+      <div>
+        <strong>PERHATIAN:</strong> Pengisian data harus diisi dengan benar / sesuai dengan ijazah sebelumnya. Cek kembali sebelum mengirim agar tidak terjadi kekeliruan.
+      </div>
+    </div>
+
+    <!-- Form Utama -->
+    <form id="biodataForm" class="p-6 sm:p-8" onsubmit="return false;">
+
+      <!-- ================= STEP 1: KETERANGAN TENTANG DIRI SISWA ================= -->
+      <div class="step-section active" data-step="1" data-title="Langkah 1 dari 5: Keterangan Diri Siswa">
+        <h2 class="text-lg font-bold text-slate-800 border-b pb-2 mb-5">A. Keterangan Tentang Diri Siswa</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="req">NISN</label>
+            <input type="text" name="nisn" required placeholder="Contoh: 0081234567" pattern="[0-9]+" title="Masukkan angka NISN">
+          </div>
+          <div>
+            <label class="req">Kelas / Jurusan</label>
+            <input type="text" name="kelas_jurusan" required placeholder="Contoh: X TKJ 1 / X IPA 2">
+          </div>
+          <div>
+            <label class="req">Nama Lengkap Siswa (Sesuai Ijazah)</label>
+            <input type="text" name="nama_lengkap" required placeholder="Masukkan nama lengkap">
+          </div>
+          <div>
+            <label class="req">Nama Panggilan</label>
+            <input type="text" name="nama_panggilan" required placeholder="Nama panggilan sehari-hari">
+          </div>
+          <div>
+            <label class="req">Jenis Kelamin</label>
+            <select name="jenis_kelamin" required>
+              <option value="">-- Pilih --</option>
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Agama</label>
+            <select name="agama" required>
+              <option value="">-- Pilih --</option>
+              <option value="Islam">Islam</option>
+              <option value="Kristen Protestan">Kristen Protestan</option>
+              <option value="Katolik">Katolik</option>
+              <option value="Hindu">Hindu</option>
+              <option value="Buddha">Buddha</option>
+              <option value="Khonghucu">Khonghucu</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Tempat Lahir</label>
+            <input type="text" name="tempat_lahir" required placeholder="Kota/Kabupaten kelahiran">
+          </div>
+          <div>
+            <label class="req">Tanggal Lahir</label>
+            <input type="date" name="tanggal_lahir" required>
+          </div>
+          <div>
+            <label class="req">Kewarganegaraan</label>
+            <input type="text" name="kewarganegaraan" value="Indonesia" required>
+          </div>
+          <div>
+            <label class="req">Bahasa Sehari-hari</label>
+            <input type="text" name="bahasa_sehari" required placeholder="Contoh: Bahasa Indonesia / Jawa / Sunda">
+          </div>
+          <div>
+            <label class="req">Anak ke-berapa</label>
+            <input type="number" name="anak_ke" min="1" required placeholder="Contoh: 1">
+          </div>
+          <div>
+            <label class="req">Status Orang Tua (Yatim/Piatu)</label>
+            <select name="status_yatim" required>
+              <option value="Lengkap (Masih Hidup Semua)">Lengkap (Masih Hidup Semua)</option>
+              <option value="Yatim">Yatim (Ayah Meninggal)</option>
+              <option value="Piatu">Piatu (Ibu Meninggal)</option>
+              <option value="Yatim Piatu">Yatim Piatu (Ayah & Ibu Meninggal)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-100">
+          <div>
+            <label class="req">Jml Saudara Kandung</label>
+            <input type="number" name="jml_saudara_kandung" min="0" value="0" required>
+          </div>
+          <div>
+            <label class="req">Jml Saudara Tiri</label>
+            <input type="number" name="jml_saudara_tiri" min="0" value="0" required>
+          </div>
+          <div>
+            <label class="req">Jml Saudara Angkat</label>
+            <input type="number" name="jml_saudara_angkat" min="0" value="0" required>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= STEP 2: TEMPAT TINGGAL & KONDISI RUMAH ================= -->
+      <div class="step-section" data-step="2" data-title="Langkah 2 dari 5: Tempat Tinggal & Rumah">
+        <h2 class="text-lg font-bold text-slate-800 border-b pb-2 mb-5">B. Keterangan Tempat Tinggal</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="md:col-span-2">
+            <label class="req">Alamat Lengkap Tempat Tinggal</label>
+            <textarea name="alamat" rows="2" required placeholder="Nama Jalan, RT/RW, Desa/Kelurahan, Kecamatan, Kabupaten/Kota"></textarea>
+          </div>
+          <div>
+            <label class="req">No. Telp / HP Siswa (WhatsApp Aktif)</label>
+            <input type="text" name="no_hp" required placeholder="Contoh: 081234567890" pattern="[0-9]+">
+          </div>
+          <div>
+            <label class="req">Tinggal Dengan</label>
+            <select name="tinggal_dengan" required>
+              <option value="">-- Pilih --</option>
+              <option value="Orang Tua Kandung">Orang Tua Kandung</option>
+              <option value="Wali / Saudara">Wali / Saudara</option>
+              <option value="Asrama / Pondok">Asrama / Pondok</option>
+              <option value="Kost / Kontrak">Kost / Kontrak</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Jarak Tempat Tinggal ke Sekolah</label>
+            <input type="text" name="jarak_sekolah" required placeholder="Contoh: 3 km / 500 meter">
+          </div>
+          <div>
+            <label class="req">Alat Transportasi ke Sekolah</label>
+            <input type="text" name="transportasi" required placeholder="Contoh: Jalan kaki / Sepeda motor / Angkutan umum">
+          </div>
+        </div>
+
+        <h2 class="text-lg font-bold text-slate-800 border-b pb-2 mt-8 mb-5">C. Keterangan Rumah</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="req">Kepemilikan Rumah</label>
+            <select name="kepemilikan_rumah" required>
+              <option value="">-- Pilih --</option>
+              <option value="Sendiri">Milik Sendiri</option>
+              <option value="Sewa / Kontrak">Sewa / Kontrak</option>
+              <option value="Menumpang / Dinas">Menumpang / Rumah Dinas</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Bangunan Rumah</label>
+            <select name="bangunan_rumah" required>
+              <option value="">-- Pilih --</option>
+              <option value="Tembok (Permanen)">Tembok (Permanen)</option>
+              <option value="Semi Permanen">Semi Permanen (Setengah Tembok)</option>
+              <option value="Kayu / Papan">Kayu / Papan</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Jenis Lantai Rumah</label>
+            <select id="select_lantai" onchange="toggleLantaiLainnya()" required>
+              <option value="">-- Pilih --</option>
+              <option value="Keramik">Keramik</option>
+              <option value="Tegel">Tegel</option>
+              <option value="Plester / Semen">Plester / Semen</option>
+              <option value="Tanah">Tanah</option>
+              <option value="Lainnya">Lainnya (Sebutkan)</option>
+            </select>
+            <input type="text" id="input_lantai_lain" class="mt-2 hidden" placeholder="Sebutkan jenis lantai...">
+            <input type="hidden" name="lantai_rumah" id="lantai_rumah_final">
+          </div>
+          <div>
+            <label class="req">Jumlah Anggota Keluarga di Rumah</label>
+            <input type="number" name="jml_anggota_keluarga" min="1" required placeholder="Contoh: 4">
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= STEP 3: KESEHATAN & PENDIDIKAN ================= -->
+      <div class="step-section" data-step="3" data-title="Langkah 3 dari 5: Kesehatan & Pendidikan">
+        <h2 class="text-lg font-bold text-slate-800 border-b pb-2 mb-5">D. Keterangan Kesehatan</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label class="req">Golongan Darah</label>
+            <select name="golongan_darah" required>
+              <option value="Tidak Tahu">Tidak Tahu</option>
+              <option value="A">A</option>
+              <option value="B">B</option>
+              <option value="AB">AB</option>
+              <option value="O">O</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Tinggi Badan (cm)</label>
+            <input type="number" name="tinggi_badan" required placeholder="Contoh: 165">
+          </div>
+          <div>
+            <label class="req">Berat Badan (kg)</label>
+            <input type="number" name="berat_badan" required placeholder="Contoh: 55">
+          </div>
+          <div class="md:col-span-3">
+            <label class="req">Penyakit yang Pernah Diderita</label>
+            <input type="text" name="riwayat_penyakit" value="Tidak ada" required placeholder="Isi 'Tidak ada' jika tidak pernah sakit berat">
+          </div>
+          <div class="md:col-span-3">
+            <label class="req">Kelainan Jasmani / Fisik</label>
+            <input type="text" name="kelainan_jasmani" value="Tidak ada" required placeholder="Isi 'Tidak ada' jika tidak memiliki kelainan jasmani">
+          </div>
+        </div>
+
+        <h2 class="text-lg font-bold text-slate-800 border-b pb-2 mt-8 mb-3">E. Keterangan Pendidikan Sebelumnya</h2>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-900">
+          <strong>NB (Catatan Pengisian Nomor Ijazah):</strong><br>
+          Nomor ijazah diisi dengan nomor yang ada di <strong>kanan bawah ijazah</strong>. Untuk SMP Negeri biasanya memakai kode <code>DN-...</code>, sedangkan untuk MTs biasanya dengan kode <code>MTs-...</code>.
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="req">Pendidikan Sebelumnya</label>
+            <select name="pendidikan_sebelumnya" required>
+              <option value="SMP">SMP</option>
+              <option value="MTs">MTs</option>
+              <option value="Paket B">Paket B</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Nama SMP / MTs Asal</label>
+            <input type="text" name="smp_asal" required placeholder="Contoh: SMP Negeri 1 ...">
+          </div>
+          <div>
+            <label class="req">Tanggal STTB / Ijazah</label>
+            <input type="date" name="tgl_ijazah" required>
+          </div>
+          <div>
+            <label class="req">Nomor STTB / Ijazah</label>
+            <input type="text" name="no_ijazah" required placeholder="Contoh: DN-01 Dd 1234567">
+          </div>
+          <div>
+            <label>Tanggal SKHUN (Jika ada)</label>
+            <input type="date" name="tgl_skhun">
+          </div>
+          <div>
+            <label>Nomor SKHUN (Isi '-' jika tidak ada)</label>
+            <input type="text" name="no_skhun" value="-" placeholder="Nomor SKHUN">
+          </div>
+          <div>
+            <label class="req">Lama Belajar di SMP/MTs</label>
+            <input type="text" name="lama_belajar" value="3 Tahun" required placeholder="Contoh: 3 Tahun">
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= STEP 4: ORANG TUA KANDUNG & WALI ================= -->
+      <div class="step-section" data-step="4" data-title="Langkah 4 dari 5: Data Orang Tua & Wali">
+        
+        <h2 class="text-lg font-bold text-slate-800 border-b pb-2 mb-4">F. Keterangan Tentang Ayah Kandung</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div>
+            <label class="req">Nama Lengkap Ayah</label>
+            <input type="text" name="ayah_nama" required>
+          </div>
+          <div>
+            <label class="req">Status Ayah</label>
+            <select name="ayah_status" required>
+              <option value="Masih Hidup">Masih Hidup</option>
+              <option value="Meninggal Dunia">Meninggal Dunia</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Tempat Lahir Ayah</label>
+            <input type="text" name="ayah_tempat_lahir" required>
+          </div>
+          <div>
+            <label class="req">Tanggal Lahir Ayah</label>
+            <input type="date" name="ayah_tgl_lahir" required>
+          </div>
+          <div>
+            <label class="req">Agama Ayah</label>
+            <input type="text" name="ayah_agama" value="Islam" required>
+          </div>
+          <div>
+            <label class="req">Kewarganegaraan Ayah</label>
+            <input type="text" name="ayah_kewarganegaraan" value="Indonesia" required>
+          </div>
+          <div>
+            <label class="req">Pendidikan Terakhir Ayah</label>
+            <select name="ayah_pendidikan" required>
+              <option value="">-- Pilih --</option>
+              <option value="Tidak Sekolah">Tidak Sekolah</option>
+              <option value="SD / Sederajat">SD / Sederajat</option>
+              <option value="SMP / Sederajat">SMP / Sederajat</option>
+              <option value="SMA / SMK / Sederajat">SMA / SMK / Sederajat</option>
+              <option value="D1 / D2 / D3">D1 / D2 / D3</option>
+              <option value="S1 / D4">S1 / D4</option>
+              <option value="S2 / S3">S2 / S3</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Pekerjaan Ayah</label>
+            <input type="text" name="ayah_pekerjaan" required placeholder="Contoh: Wiraswasta / PNS / Petani / Buruh">
+          </div>
+          <div>
+            <label class="req">Penghasilan Per Bulan Ayah</label>
+            <select name="ayah_penghasilan" required>
+              <option value="">-- Pilih Kisaran --</option>
+              <option value="Tidak Berpenghasilan">Tidak Berpenghasilan</option>
+              <option value="Kurang dari Rp 1.000.000">Kurang dari Rp 1.000.000</option>
+              <option value="Rp 1.000.000 - Rp 2.500.000">Rp 1.000.000 - Rp 2.500.000</option>
+              <option value="Rp 2.500.000 - Rp 5.000.000">Rp 2.500.000 - Rp 5.000.000</option>
+              <option value="Lebih dari Rp 5.000.000">Lebih dari Rp 5.000.000</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Alamat Rumah & No. Telp/HP Ayah</label>
+            <input type="text" name="ayah_alamat_hp" required placeholder="Alamat & No. HP Ayah">
+          </div>
+        </div>
+
+        <h2 class="text-lg font-bold text-slate-800 border-b pb-2 mb-4">G. Keterangan Tentang Ibu Kandung</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div>
+            <label class="req">Nama Lengkap Ibu</label>
+            <input type="text" name="ibu_nama" required>
+          </div>
+          <div>
+            <label class="req">Status Ibu</label>
+            <select name="ibu_status" required>
+              <option value="Masih Hidup">Masih Hidup</option>
+              <option value="Meninggal Dunia">Meninggal Dunia</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Tempat Lahir Ibu</label>
+            <input type="text" name="ibu_tempat_lahir" required>
+          </div>
+          <div>
+            <label class="req">Tanggal Lahir Ibu</label>
+            <input type="date" name="ibu_tgl_lahir" required>
+          </div>
+          <div>
+            <label class="req">Agama Ibu</label>
+            <input type="text" name="ibu_agama" value="Islam" required>
+          </div>
+          <div>
+            <label class="req">Kewarganegaraan Ibu</label>
+            <input type="text" name="ibu_kewarganegaraan" value="Indonesia" required>
+          </div>
+          <div>
+            <label class="req">Pendidikan Terakhir Ibu</label>
+            <select name="ibu_pendidikan" required>
+              <option value="">-- Pilih --</option>
+              <option value="Tidak Sekolah">Tidak Sekolah</option>
+              <option value="SD / Sederajat">SD / Sederajat</option>
+              <option value="SMP / Sederajat">SMP / Sederajat</option>
+              <option value="SMA / SMK / Sederajat">SMA / SMK / Sederajat</option>
+              <option value="D1 / D2 / D3">D1 / D2 / D3</option>
+              <option value="S1 / D4">S1 / D4</option>
+              <option value="S2 / S3">S2 / S3</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Pekerjaan Ibu</label>
+            <input type="text" name="ibu_pekerjaan" required placeholder="Contoh: Ibu Rumah Tangga / Guru / Pedagang">
+          </div>
+          <div>
+            <label class="req">Penghasilan / Pengeluaran Per Bulan Ibu</label>
+            <select name="ibu_penghasilan" required>
+              <option value="">-- Pilih Kisaran --</option>
+              <option value="Tidak Berpenghasilan">Tidak Berpenghasilan (IRT)</option>
+              <option value="Kurang dari Rp 1.000.000">Kurang dari Rp 1.000.000</option>
+              <option value="Rp 1.000.000 - Rp 2.500.000">Rp 1.000.000 - Rp 2.500.000</option>
+              <option value="Rp 2.500.000 - Rp 5.000.000">Rp 2.500.000 - Rp 5.000.000</option>
+              <option value="Lebih dari Rp 5.000.000">Lebih dari Rp 5.000.000</option>
+            </select>
+          </div>
+          <div>
+            <label class="req">Alamat Rumah & No. Telp/HP Ibu</label>
+            <input type="text" name="ibu_alamat_hp" required placeholder="Alamat & No. HP Ibu">
+          </div>
+        </div>
+
+        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div class="flex items-center justify-between flex-wrap gap-2 border-b pb-3 mb-4">
+            <h2 class="text-lg font-bold text-slate-800">H. Keterangan Tentang Wali (Opsional)</h2>
+            <label class="inline-flex items-center gap-2 cursor-pointer text-sm text-blue-700 font-semibold mb-0">
+              <input type="checkbox" id="toggleWali" checked onchange="toggleWaliFields()" class="w-4 h-4 rounded">
+              Tidak memiliki Wali (Tinggal bersama Orang Tua)
+            </label>
+          </div>
+
+          <div id="waliContainer" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label>Nama Wali</label><input type="text" name="wali_nama"></div>
+            <div>
+              <label>Status Wali</label>
+              <select name="wali_status">
+                <option value="Masih Hidup">Masih Hidup</option>
+                <option value="Meninggal Dunia">Meninggal Dunia</option>
+              </select>
+            </div>
+            <div><label>Tempat Lahir Wali</label><input type="text" name="wali_tempat_lahir"></div>
+            <div><label>Tanggal Lahir Wali</label><input type="date" name="wali_tgl_lahir"></div>
+            <div><label>Agama Wali</label><input type="text" name="wali_agama"></div>
+            <div><label>Kewarganegaraan Wali</label><input type="text" name="wali_kewarganegaraan"></div>
+            <div><label>Pendidikan Wali</label><input type="text" name="wali_pendidikan"></div>
+            <div><label>Pekerjaan Wali</label><input type="text" name="wali_pekerjaan"></div>
+            <div><label>Penghasilan / Pengeluaran Per Bulan Wali</label><input type="text" name="wali_penghasilan"></div>
+            <div><label>Alamat Rumah & No. Telp/HP Wali</label><input type="text" name="wali_alamat_hp"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= STEP 5: KEGEMARAN & PERKEMBANGAN SISWA ================= -->
+      <div class="step-section" data-step="5" data-title="Langkah 5 dari 5: Kegemaran & Beasiswa">
+        <h2 class="text-lg font-bold text-slate-800 border-b pb-2 mb-5">I. Kegemaran / Hobi Siswa</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div>
+            <label>Bidang Kesenian</label>
+            <input type="text" name="hobi_kesenian" value="-" placeholder="Contoh: Musik, Tari, Melukis (atau isi '-')">
+          </div>
+          <div>
+            <label>Bidang Olahraga</label>
+            <input type="text" name="hobi_olahraga" value="-" placeholder="Contoh: Sepak Bola, Bulu Tangkis (atau isi '-')">
+          </div>
+          <div>
+            <label>Kemasyarakatan / Organisasi</label>
+            <input type="text" name="hobi_organisasi" value="-" placeholder="Contoh: OSIS, Pramuka, Karang Taruna">
+          </div>
+          <div>
+            <label>Kegemaran Lain-lain</label>
+            <input type="text" name="hobi_lain" value="-" placeholder="Contoh: Membaca, Coding, Fotografi">
+          </div>
+        </div>
+
+        <h2 class="text-lg font-bold text-slate-800 border-b pb-2 mb-2">J. Keterangan Perkembangan Siswa (Riwayat Beasiswa)</h2>
+        <p class="text-xs text-slate-500 mb-4">Kosongkan bagian di bawah ini jika siswa belum pernah menerima beasiswa.</p>
+
+        <div class="space-y-3">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border">
+            <div><label>Beasiswa 1 - Tahun</label><input type="text" name="bs1_tahun" placeholder="Contoh: 2024"></div>
+            <div><label>Tingkat / Kelas</label><input type="text" name="bs1_tingkat" placeholder="Contoh: SMP Kelas IX"></div>
+            <div><label>Sumber / Dari</label><input type="text" name="bs1_dari" placeholder="Contoh: PIP / Pemda"></div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border">
+            <div><label>Beasiswa 2 - Tahun</label><input type="text" name="bs2_tahun" placeholder="Tahun"></div>
+            <div><label>Tingkat / Kelas</label><input type="text" name="bs2_tingkat" placeholder="Tingkat"></div>
+            <div><label>Sumber / Dari</label><input type="text" name="bs2_dari" placeholder="Dari"></div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3 rounded-lg border">
+            <div><label>Beasiswa 3 - Tahun</label><input type="text" name="bs3_tahun" placeholder="Tahun"></div>
+            <div><label>Tingkat / Kelas</label><input type="text" name="bs3_tingkat" placeholder="Tingkat"></div>
+            <div><label>Sumber / Dari</label><input type="text" name="bs3_dari" placeholder="Dari"></div>
+          </div>
+        </div>
+
+        <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+          <label class="flex items-start gap-3 cursor-pointer mb-0">
+            <input type="checkbox" id="confirmCheck" class="mt-1 w-4 h-4 rounded text-blue-600">
+            <span class="text-sm text-slate-700">Saya menyatakan bahwa seluruh data yang diisikan pada blangko ini adalah benar dan telah diperiksa sesuai dengan dokumen resmi (Ijazah / KK / Akta Kelahiran).</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Navigasi Tombol -->
+      <div class="flex justify-between items-center mt-8 pt-5 border-t border-slate-200">
+        <button type="button" id="prevBtn" onclick="changeStep(-1)" class="hidden px-5 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-medium hover:bg-slate-100 transition">
+          ← Sebelumnya
+        </button>
+        <div class="ml-auto flex gap-3">
+          <button type="button" id="nextBtn" onclick="changeStep(1)" class="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 shadow transition">
+            Selanjutnya →
+          </button>
+          <button type="button" id="submitBtn" onclick="kirimData()" class="hidden px-7 py-2.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 shadow-md transition">
+            ✓ Kirim Biodata
+          </button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <script>
+    // =========================================================================
+    // TEMPELKAN URL WEB APP APPS SCRIPT (/exec) ANDA DI BAWAH INI:
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw-WIiwk-ZScDC38sah7WbglQKs1GZTNh4hHuHcqQ8dDmuOUwo8f3h-scIxC8KzbNM_3A/exec";
+    // =========================================================================
+
+    let currentStep = 1;
+    const totalSteps = 5;
+
+    function toggleLantaiLainnya() {
+      const sel = document.getElementById('select_lantai').value;
+      const inp = document.getElementById('input_lantai_lain');
+      if (sel === 'Lainnya') {
+        inp.classList.remove('hidden');
+        inp.required = true;
+      } else {
+        inp.classList.add('hidden');
+        inp.required = false;
+      }
+    }
+
+    function toggleWaliFields() {
+      const isNoWali = document.getElementById('toggleWali').checked;
+      const container = document.getElementById('waliContainer');
+      if (isNoWali) {
+        container.classList.add('hidden');
+      } else {
+        container.classList.remove('hidden');
+      }
+    }
+
+    function validateCurrentStep() {
+      const activeSection = document.querySelector(`.step-section[data-step="${currentStep}"]`);
+      const inputs = activeSection.querySelectorAll('input[required], select[required], textarea[required]');
+      
+      for (let input of inputs) {
+        if (!input.checkValidity()) {
+          input.reportValidity();
+          return false;
+        }
+      }
+
+      if (currentStep === 2) {
+        const selLantai = document.getElementById('select_lantai').value;
+        const lainLantai = document.getElementById('input_lantai_lain').value;
+        document.getElementById('lantai_rumah_final').value = (selLantai === 'Lainnya') ? lainLantai : selLantai;
+      }
+      return true;
+    }
+
+    function changeStep(direction) {
+      if (direction === 1 && !validateCurrentStep()) return;
+
+      document.querySelector(`.step-section[data-step="${currentStep}"]`).classList.remove('active');
+      currentStep += direction;
+      const nextSection = document.querySelector(`.step-section[data-step="${currentStep}"]`);
+      nextSection.classList.add('active');
+
+      const percent = (currentStep / totalSteps) * 100;
+      document.getElementById('progress-bar').style.width = percent + '%';
+      document.getElementById('step-percent').innerText = percent + '%';
+      document.getElementById('step-label').innerText = nextSection.getAttribute('data-title');
+
+      document.getElementById('prevBtn').classList.toggle('hidden', currentStep === 1);
+      document.getElementById('nextBtn').classList.toggle('hidden', currentStep === totalSteps);
+      document.getElementById('submitBtn').classList.toggle('hidden', currentStep !== totalSteps);
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function kirimData() {
+      if (SCRIPT_URL.includes("PASTE_URL")) {
+        Swal.fire('Konfigurasi Belum Lengkap', 'Admin belum memasukkan URL Web App Apps Script ke dalam file index.html.', 'error');
+        return;
+      }
+
+      if (!document.getElementById('confirmCheck').checked) {
+        Swal.fire('Konfirmasi Diperlukan', 'Silakan centang pernyataan kebenaran data terlebih dahulu.', 'warning');
+        return;
+      }
+
+      const form = document.getElementById('biodataForm');
+      const formData = new FormData(form);
+      const dataObj = {};
+      formData.forEach((value, key) => {
+        dataObj[key] = value;
+      });
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Menyimpan...';
+
+      Swal.fire({
+        title: 'Sedang Menyimpan Data...',
+        text: 'Mohon tunggu sebentar, jangan tutup halaman ini.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      // Menggunakan fetch standar (tanpa preflight CORS) menuju doPost Apps Script
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(dataObj)
+      })
+      .then(response => response.json())
+      .then(res => {
+        submitBtn.disabled = false;
+        submitBtn.innerText = '✓ Kirim Biodata';
+
+        if (res.status === 'success') {
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil Terkirim!',
+            text: res.message,
+            confirmButtonText: 'Selesai'
+          }).then(() => {
+            form.reset();
+            location.reload();
+          });
+        } else if (res.status === 'duplicate') {
+          Swal.fire('NISN Sudah Terdaftar', res.message, 'warning');
+        } else {
+          Swal.fire('Gagal Menyimpan', res.message, 'error');
+        }
+      })
+      .catch(err => {
+        submitBtn.disabled = false;
+        submitBtn.innerText = '✓ Kirim Biodata';
+        Swal.fire('Koneksi Terganggu', 'Gagal terhubung ke server Spreadsheet. Pastikan koneksi internet stabil.', 'error');
+      });
+    }
+  </script>
+</body>
+</html>
