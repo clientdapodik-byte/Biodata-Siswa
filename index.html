@@ -224,7 +224,7 @@ const ortu = (p,L,r=true) => [
   F(p+'_pendidikan','Pendidikan Terakhir '+L,{t:'select',o:PENDIDIKAN,r}),
   F(p+'_pekerjaan','Pekerjaan '+L,{t:'select',o:PEKERJAAN,r}),
   F(p+'_penghasilan','Penghasilan / Pengeluaran per Bulan '+L,{t:'select',o:GAJI,r}),
-  F(p+'_no_hp','No. HP / WhatsApp '+L,{r,ph:'Contoh: 081234567890',m:1,pat:'[0-9]+',im:'numeric'}),
+  F(p+'_no_hp','No. HP / WhatsApp '+L,{r,ph:'Contoh: 081234567890',m:1,pat:'[0-9]{10,13}',im:'numeric',ml:13}),
 ];
 const bea = n => ({stack:1,f:[
   F(`bs${n}_tahun`,`Beasiswa ${n} — Tahun`,{r:false,ph:n==1?'Contoh: 2024':'Tahun'}),
@@ -234,9 +234,9 @@ const bea = n => ({stack:1,f:[
 const STEPS = [
  {ic:'👤',sh:'Diri Siswa',bg:'#cffafe',t:'A. Keterangan Tentang Diri Siswa',sub:'Identitas pribadi dan susunan keluarga',blocks:[
   {f:[
-   F('nisn','NISN (Nomor Induk Siswa Nasional)',{ph:'Contoh: 0081234567',m:1,pat:'[0-9]+',im:'numeric'}),
-   F('nik','NIK (Nomor Induk Kependudukan)',{ph:'16 digit, sesuai Kartu Keluarga',m:1,pat:'[0-9]{16}',im:'numeric'}),
-   F('no_kk','No. KK (Nomor Kartu Keluarga)',{ph:'16 digit, tertera di Kartu Keluarga',m:1,pat:'[0-9]{16}',im:'numeric'}),
+   F('nisn','NISN (Nomor Induk Siswa Nasional)',{ph:'Contoh: 0081234567',m:1,pat:'[0-9]{10}',im:'numeric',ml:10}),
+   F('nik','NIK (Nomor Induk Kependudukan)',{ph:'16 digit, sesuai Kartu Keluarga',m:1,pat:'[0-9]{16}',im:'numeric',ml:16}),
+   F('no_kk','No. KK (Nomor Kartu Keluarga)',{ph:'16 digit, tertera di Kartu Keluarga',m:1,pat:'[0-9]{16}',im:'numeric',ml:16}),
    F('kelas_jurusan','Jurusan',{t:'select',o:JURUSAN,ph:'-- Pilih Jurusan --'}),
    F('nama_lengkap','Nama Lengkap Siswa (Sesuai Ijazah)',{ph:'Masukkan nama lengkap'}),
    F('nama_panggilan','Nama Panggilan',{ph:'Nama panggilan sehari-hari'}),
@@ -257,7 +257,7 @@ const STEPS = [
  {ic:'🏠',sh:'Tempat Tinggal',bg:'#e0f2fe',t:'B. Tempat Tinggal & Kondisi Rumah',sub:'Alamat, transportasi, dan keterangan rumah',blocks:[
   {f:[
    F('alamat','Alamat Lengkap Tempat Tinggal',{t:'area',s:1,ph:'Nama Jalan, RT/RW, Desa, Kecamatan, Kabupaten'}),
-   F('no_hp','No. HP Siswa (WhatsApp Aktif)',{ph:'Contoh: 081234567890',m:1,pat:'[0-9]+',im:'numeric'}),
+   F('no_hp','No. HP Siswa (WhatsApp Aktif)',{ph:'Contoh: 081234567890',m:1,pat:'[0-9]{10,13}',im:'numeric',ml:13}),
    F('tinggal_dengan','Jenis Tinggal',{t:'select',o:['Bersama orang tua','Wali','Kost','Asrama','Panti asuhan','Pesantren','Lainnya']}),
    F('jarak_sekolah','Jarak Tempat Tinggal ke Sekolah',{ph:'Contoh: 3 km / 500 meter'}),
    F('transportasi','Alat Transportasi ke Sekolah',{t:'select',o:TRANSPORT})]},
@@ -327,7 +327,7 @@ function fieldHTML(f) {
   else if (f.t === 'date') el = dateHTML(f);
   else if (f.t === 'area') el = `<textarea name="${f.name}" rows="2" placeholder="${f.ph||''}"></textarea>`;
   else if (f.t === 'radio') el = `<div class="grid c2">${f.o.map(([v,l]) => `<label class="rc"><input type="radio" name="${f.name}" value="${v}"><div>${l}<i></i></div></label>`).join('')}</div>`;
-  else el = `<input type="${f.t||'text'}" name="${f.name}"${f.v!==undefined?` value="${f.v}"`:''} class="${f.m?'mono':''}" placeholder="${f.ph||''}"${f.min!==undefined?` min="${f.min}"`:''}${f.im?` inputmode="${f.im}"`:''}>`;
+  else el = `<input type="${f.t||'text'}" name="${f.name}"${f.v!==undefined?` value="${f.v}"`:''} class="${f.m?'mono':''}" placeholder="${f.ph||''}"${f.min!==undefined?` min="${f.min}"`:''}${f.im?` inputmode="${f.im}"`:''}${f.ml?` maxlength="${f.ml}"`:''}>`;
   return `<div class="fld${f.s?' span':''}" style="--i:${idx++}"${f.r?' data-req="1"':''}${f.pat?` data-pat="${f.pat}"`:''}><label class="l${f.r?' rq':''}">${f.label}</label>${el}${f.after||''}<small class="em"></small></div>`;
 }
 function blockHTML(b) {
@@ -468,7 +468,7 @@ function getVal(fld) {
 function checkFld(fld) {
   const v = getVal(fld); let msg = '';
   if (fld.dataset.req && !v) msg = 'Wajib diisi';
-  else if (v && fld.dataset.pat && !new RegExp('^'+fld.dataset.pat+'$').test(v)) msg = fld.dataset.pat.includes('{16}') ? 'Harus 16 digit angka' : 'Hanya boleh berisi angka';
+  else if (v && fld.dataset.pat && !new RegExp('^'+fld.dataset.pat+'$').test(v)) { const p = fld.dataset.pat, a = p.match(/\{(\d+)\}/), b = p.match(/\{(\d+),(\d+)\}/); msg = a ? 'Harus ' + a[1] + ' digit angka' : b ? 'Harus ' + b[1] + '–' + b[2] + ' digit angka' : 'Hanya boleh berisi angka'; }
   else if (v === 'Lainnya' && fld.querySelector('#lantaiLain') && !$('#lantaiLain').value.trim()) msg = 'Sebutkan jenis lantai';
   fld.classList.remove('bad'); if (msg) { void fld.offsetWidth; fld.querySelector('.em').textContent = msg; fld.classList.add('bad'); }
   return !msg;
@@ -480,7 +480,8 @@ function validate() {
   const i = bad[0].querySelector('input:not([type=hidden]),textarea'); if (i) setTimeout(() => i.focus({preventScroll:true}), 300);
   return false;
 }
-$('#f').addEventListener('input', e => { const f = e.target.closest('.fld'); if (f && f.classList.contains('bad')) checkFld(f); });
+$('#f').addEventListener('input', e => { if (e.target.inputMode === 'numeric') e.target.value = e.target.value.replace(/\D/g, '');
+  const f = e.target.closest('.fld'); if (f && f.classList.contains('bad')) checkFld(f); });
 
 // ===== Navigasi =====
 function show(n, dir) {
