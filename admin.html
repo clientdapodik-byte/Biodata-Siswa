@@ -151,6 +151,20 @@
       body[data-print-target="blangko"] #printContainer { position: static !important; }
       body[data-print-target="blangko"] .paper-sheet { animation: none !important; }
     }
+
+    /* ===== MODE 1 LAYAR PENUH (tanpa scroll halaman, kecuali menu Cetak) ===== */
+    body.fit, body.fit html { overflow: hidden; }
+    body.fit #dashboardScreen { height: 100vh; min-height: 0 !important; }
+    body.fit aside { height: 100vh; min-height: 0 !important; position: static !important; overflow-y: auto; scrollbar-width: thin; }
+    body.fit #dashboardScreen > :not(aside) { height: 100vh; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+    body.fit header { position: static; flex: none; padding-top: 10px; padding-bottom: 10px; }
+    body.fit main { flex: 1 1 0; min-height: 0; overflow: hidden; padding: 14px 24px !important; max-width: none !important; }
+    body.fit #tab-students:not(.hidden), body.fit #tab-classes:not(.hidden) { height: 100%; display: flex; flex-direction: column; gap: 14px; }
+    body.fit #tab-students > *, body.fit #tab-classes > * { margin-top: 0 !important; flex: none; }
+    body.fit #tab-students > .overflow-hidden, body.fit #tab-classes > .overflow-hidden { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+    body.fit #tab-students .overflow-x-auto, body.fit #tab-classes .overflow-x-auto { flex: 1 1 0; min-height: 0; overflow: auto; scrollbar-width: thin; }
+    body.fit #tab-students thead th, body.fit #tab-classes thead th { position: sticky; top: 0; z-index: 2; background: #f8fafc; }
+    @media print { html, body { height: auto !important; overflow: visible !important; } }
   </style>
 </head>
 <body class="text-slate-800 antialiased" data-print-target="blangko">
@@ -2167,6 +2181,40 @@ Terima kasih.`;
     }
     addEventListener('beforeprint', fitSheetsForPrint);
     addEventListener('afterprint', resetSheetsAfterPrint);
+  </script>
+  <script>
+    // ===== Satu menu = satu layar: isi diperkecil otomatis agar muat, tabel di-scroll di dalam kartunya =====
+    (function () {
+      const main = () => document.querySelector('main'), secs = () => [...document.querySelectorAll('section[id^="tab-"]')];
+      let busy = false;
+      function fitScreen() {
+        if (busy) return; busy = true;
+        const sec = secs().find(x => !x.classList.contains('hidden')), m = main();
+        secs().forEach(x => x.style.zoom = ''); m.style.overflowY = '';
+        const on = innerWidth >= 1024 && innerHeight >= 540 && sec && sec.id !== 'tab-print'
+                   && !document.getElementById('dashboardScreen').classList.contains('hidden');
+        document.body.classList.toggle('fit', !!on); document.documentElement.style.overflow = on ? 'hidden' : '';
+        if (on && sec.id !== 'tab-students' && sec.id !== 'tab-classes') {
+          const cs = getComputedStyle(m), avail = m.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+          let z = 1;
+          for (let i = 0; i < 8; i++) {
+            sec.style.zoom = z; const h = sec.getBoundingClientRect().height;
+            if (h <= avail + 1 || z <= 0.6) break;
+            z = Math.max(0.6, z * (avail / h) * 0.99);
+          }
+          if (sec.getBoundingClientRect().height > avail + 1) m.style.overflowY = 'auto';   // cadangan: layar terlalu pendek
+        }
+        busy = false;
+      }
+      const _sw = window.switchTab;
+      window.switchTab = function (t) { _sw.apply(this, arguments); requestAnimationFrame(fitScreen); };
+      let tm; const later = () => { clearTimeout(tm); tm = setTimeout(fitScreen, 120); };
+      addEventListener('resize', later);
+      new MutationObserver(later).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+      addEventListener('beforeprint', () => { document.body.classList.remove('fit'); secs().forEach(x => x.style.zoom = ''); main().style.overflowY = ''; document.documentElement.style.overflow = ''; });
+      addEventListener('afterprint', later);
+      later();
+    })();
   </script>
 </body>
 </html>
