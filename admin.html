@@ -2141,24 +2141,23 @@ Terima kasih.`;
       if (document.body.getAttribute('data-print-target') !== 'blangko') return;
       const a4 = document.getElementById('paperSizeSelect').value.startsWith('a4');
       const mm = v => v * 96 / 25.4;
-      const W = mm((a4 ? 210 : 215) - 24), H = mm((a4 ? 297 : 330) - 20 - 2);
+      const W = mm((a4 ? 210 : 215) - 24), H = mm((a4 ? 297 : 330) - 20 - 3);
       document.querySelectorAll('.paper-sheet').forEach(el => {
-        const st = el.style;
-        st.removeProperty('transform'); st.removeProperty('margin-bottom');
-        const keep = [st.width, st.padding, st.minHeight];
-        st.width = W + 'px'; st.padding = '0'; st.minHeight = '0';
-        const h = el.scrollHeight;
-        st.width = keep[0]; st.padding = keep[1]; st.minHeight = keep[2];
-        const z = Math.min(1, (H / h) * 0.99);
-        if (z < 1) {
-          st.setProperty('transform', `scale(${z})`, 'important');
-          st.setProperty('transform-origin', 'top center', 'important');
-          st.setProperty('margin-bottom', `-${h * (1 - z)}px`, 'important');
+        const st = el.style, keep = [st.width, st.padding, st.minHeight];
+        st.zoom = ''; st.width = W + 'px'; st.padding = '0'; st.minHeight = '0';
+        let z = 1;
+        for (let i = 0; i < 10; i++) {            // perkecil bertahap sampai tinggi nyata <= 1 halaman
+          st.zoom = z;
+          const h = el.getBoundingClientRect().height;
+          if (h <= H) break;
+          z *= (H / h) * 0.99;
         }
+        st.width = keep[0]; st.padding = keep[1]; st.minHeight = keep[2];
+        if (z >= 1) st.zoom = ''; else st.zoom = z;
       });
     }
     function resetSheetsAfterPrint() {
-      document.querySelectorAll('.paper-sheet').forEach(el => { el.style.removeProperty('transform'); el.style.removeProperty('transform-origin'); el.style.removeProperty('margin-bottom'); });
+      document.querySelectorAll('.paper-sheet').forEach(el => { el.style.zoom = ''; });
     }
     addEventListener('beforeprint', fitSheetsForPrint);
     addEventListener('afterprint', resetSheetsAfterPrint);
