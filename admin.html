@@ -6,7 +6,7 @@
   <title>Dashboard Pengelola - Sistem Biodata Siswa</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -1728,23 +1728,161 @@ section[id^="tab-"] { animation: fadeUp .25s ease both !important; }
       renderBatchClassPrint();
     }
 
-    function exportExcel(list, fileName, sheetName) {
-      if (!list.length) { Swal.fire('Kosong', 'Tidak ada data untuk diunduh.', 'info'); return; }
-      if (typeof XLSX === 'undefined') { Swal.fire('Error', 'Library Excel gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.', 'error'); return; }
-      const flat = groupedEditableFields.flatMap(g => g.fields);
-      const head = ['No', 'Waktu Input', ...flat.map(f => f.label)];
-      const rows = list.map((s, i) => [i + 1, s.waktu_input || '', ...flat.map(f => s[f.key] == null ? '' : String(s[f.key]))]);
-      const ws = XLSX.utils.aoa_to_sheet([head, ...rows]);
-      ws['!cols'] = head.map((h, c) => ({ wch: Math.min(40, Math.max(String(h).length, ...rows.map(r => String(r[c]).length)) + 2) }));
-      ws['!freeze'] = { xSplit: 3, ySplit: 1 };
-      ws['!views'] = [{ state: 'frozen', xSplit: 3, ySplit: 1 }];
-      ws['!autofilter'] = { ref: ws['!ref'] };
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, sheetName.replace(/[\\\/?*\[\]:]/g, ' ').slice(0, 31) || 'Biodata');
-      XLSX.writeFile(wb, fileName);
-    }
+    // ===== EXPORT EXCEL: setiap siswa = 1 lembar (sheet) berformat blangko =====
+function dataBlangko(s) {
+  const v = x => (x == null || String(x).trim() === '' ? '-' : String(x).trim());
+  const tgl = formatTanggalIndo;
+  const ttl = (t, d) => `${v(t)}, ${tgl(d)}`;
+  const ortu = (p, no, nama, penghasilanLabel, hpNo) => [
+    [`${no}. ${nama}`, `${v(s[p + '_nama'])} (${v(s[p + '_status'])})`],
+    [`${no + 1}. Tempat / Tanggal lahir`, ttl(s[p + '_tempat_lahir'], s[p + '_tgl_lahir'])],
+    [`${no + 2}. Agama / Kewarganegaraan`, `${v(s[p + '_agama'])} / ${v(s[p + '_kewarganegaraan'])}`],
+    [`${no + 3}. Pendidikan / Pekerjaan`, `${v(s[p + '_pendidikan'])} / ${v(s[p + '_pekerjaan'])}`],
+    [`${no + 4}. ${penghasilanLabel}`, v(s[p + '_penghasilan'])],
+    [`${no + 5}. No. HP / WhatsApp`, v(s[p + '_no_hp'])]
+  ];
+  const wali = s.wali_nama && s.wali_nama !== '-';
+  return [
+    { t: 'A. Keterangan Tentang Diri Siswa', r: [
+      ['1. Nama lengkap siswa', String(s.nama_lengkap || '-').toUpperCase()],
+      ['2. Nama Panggilan', v(s.nama_panggilan)],
+      ['3. Jenis Kelamin', v(s.jenis_kelamin)],
+      ['4. Tempat / Tanggal lahir', ttl(s.tempat_lahir, s.tanggal_lahir)],
+      ['5. Agama', v(s.agama)],
+      ['6. Kewarganegaraan', v(s.kewarganegaraan)],
+      ['7. Anak ke-berapa', v(s.anak_ke)],
+      ['8. Jumlah saudara kandung / tiri / angkat', `Kandung: ${s.jml_saudara_kandung || 0} org | Tiri: ${s.jml_saudara_tiri || 0} org | Angkat: ${s.jml_saudara_angkat || 0} org`],
+      ['9. Anak yatim / piatu / yatim piatu', v(s.status_yatim)],
+      ['10. Bahasa sehari-hari', v(s.bahasa_sehari)]
+    ]},
+    { t: 'B. Keterangan Tempat Tinggal', r: [
+      ['11. Alamat lengkap', v(s.alamat)],
+      ['12. No. Telp / HP', v(s.no_hp)],
+      ['13. Tinggal dengan', v(s.tinggal_dengan)],
+      ['14. Jarak tempat tinggal ke sekolah', v(s.jarak_sekolah)],
+      ['15. Alat transportasi ke sekolah', v(s.transportasi)]
+    ]},
+    { t: 'C. Keterangan Kondisi Rumah', r: [
+      ['16. Kepemilikan / Bangunan / Lantai rumah', `${v(s.kepemilikan_rumah)} / ${v(s.bangunan_rumah)} / Lantai ${v(s.lantai_rumah)}`],
+      ['17. Jumlah anggota keluarga', `${v(s.jml_anggota_keluarga)} orang`]
+    ]},
+    { t: 'D. Keterangan Kesehatan Siswa', r: [
+      ['18. Golongan darah / Tinggi / Berat badan', `Gol. ${v(s.golongan_darah)} | TB: ${v(s.tinggi_badan)} cm | BB: ${v(s.berat_badan)} kg`],
+      ['19. Penyakit yang pernah diderita', v(s.riwayat_penyakit)],
+      ['20. Kelainan jasmani', v(s.kelainan_jasmani)]
+    ]},
+    { t: 'E. Keterangan Pendidikan Sebelumnya', r: [
+      ['21. Pendidikan sebelumnya / Asal sekolah', `${v(s.pendidikan_sebelumnya)} — ${v(s.smp_asal)} (Lama belajar: ${v(s.lama_belajar)})`],
+      ['22. Tanggal dan No. STTB / Ijazah', `${tgl(s.tgl_ijazah)} / No: ${v(s.no_ijazah)}`],
+      ['23. Tanggal dan No. SKHUN', `${tgl(s.tgl_skhun)} / No: ${v(s.no_skhun)}`]
+    ]},
+    { t: 'F. Keterangan Tentang Ayah Kandung', r: ortu('ayah', 24, 'Nama Ayah Kandung', 'Penghasilan per bulan') },
+    { t: 'G. Keterangan Tentang Ibu Kandung', r: ortu('ibu', 30, 'Nama Ibu Kandung', 'Penghasilan / Pengeluaran per bulan') },
+    { t: 'H. Keterangan Tentang Wali (Opsional)', r: [
+      ['36. Nama Wali / Status', wali ? `${v(s.wali_nama)} (${v(s.wali_status)})` : '-'],
+      ['37. Tempat / Tanggal lahir', wali ? ttl(s.wali_tempat_lahir, s.wali_tgl_lahir) : '-'],
+      ['38. Pendidikan / Pekerjaan', wali ? `${v(s.wali_pendidikan)} / ${v(s.wali_pekerjaan)}` : '-'],
+      ['39. No. HP / WhatsApp', v(s.wali_no_hp)]
+    ]},
+    { t: 'I. Kegemaran Siswa', r: [
+      ['40. Kesenian / Olahraga', `${v(s.hobi_kesenian)} / ${v(s.hobi_olahraga)}`],
+      ['41. Kemasyarakatan (Organisasi) / Lain-lain', `${v(s.hobi_organisasi)} / ${v(s.hobi_lain)}`]
+    ]},
+    { t: 'J. Riwayat Beasiswa', r: [
+      ['42. Menerima Beasiswa', `1) ${beasiswaText(s, 1)}\n2) ${beasiswaText(s, 2)}\n3) ${beasiswaText(s, 3)}`]
+    ]}
+  ];
+}
 
-    function exportCSVKelas(kelas) {
+function isiSheetBlangko(ws, s) {
+  const FONT = { name: 'Times New Roman', size: 10 };
+  const thin = { style: 'thin', color: { argb: 'FF000000' } };
+  const grey = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+  ws.columns = [{ width: 2 }, { width: 44 }, { width: 2 }, { width: 62 }];
+  const hLines = (txt, w) => Math.max(1, String(txt).split('\n').reduce((n, l) => n + Math.ceil(l.length / w), 0));
+  const bar = (text, opt = {}) => {
+    const r = ws.addRow([text]); ws.mergeCells(r.number, 1, r.number, 4);
+    const c = r.getCell(1);
+    c.font = { ...FONT, bold: true, size: opt.size || 10 };
+    c.alignment = { horizontal: opt.center ? 'center' : 'left', vertical: 'middle', wrapText: true };
+    if (opt.section) { c.fill = grey; c.border = { top: thin, bottom: thin }; }
+    r.height = opt.h || 16; return r;
+  };
+
+  bar(appSettings.nama_sekolah || '', { center: true, size: 13, h: 20 });
+  bar('BLANGKO DATA DIRI SISWA', { center: true, size: 12, h: 18 });
+  const tp = bar('Tahun Pelajaran ' + (appSettings.tahun_pelajaran || ''), { center: true });
+  tp.getCell(1).font = { ...FONT }; tp.getCell(1).border = { bottom: { style: 'double', color: { argb: 'FF000000' } } };
+  ws.addRow([]).height = 6;
+
+  // Kotak identitas
+  [['NAMA SISWA', String(s.nama_lengkap || '-').toUpperCase()], ['KELAS / JURUSAN', s.kelas_jurusan], ['NISN', s.nisn], ['NIK', s.nik], ['NO. KK', s.no_kk]]
+    .forEach(([l, val]) => {
+      const r = ws.addRow(['', l, ':', val == null || String(val).trim() === '' ? '-' : String(val)]);
+      ws.mergeCells(r.number, 1, r.number, 1);
+      [2, 3, 4].forEach(i => { const c = r.getCell(i); c.font = { ...FONT, bold: true }; c.border = { top: thin, bottom: thin, left: i === 2 ? thin : undefined, right: i === 4 ? thin : undefined }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } }; c.alignment = { vertical: 'middle' }; });
+      r.getCell(4).numFmt = '@'; r.getCell(4).alignment = { horizontal: 'left', vertical: 'middle' };
+      r.height = 16;
+    });
+
+  dataBlangko(s).forEach(sec => {
+    ws.addRow([]).height = 5;
+    bar(sec.t.toUpperCase(), { section: true });
+    sec.r.forEach(([label, val]) => {
+      const r = ws.addRow(['', label, ':', val]);
+      r.getCell(2).font = FONT; r.getCell(3).font = FONT; r.getCell(4).font = { ...FONT, bold: /^(1|24|30)\./.test(label) };
+      [2, 4].forEach(i => r.getCell(i).alignment = { vertical: 'top', wrapText: true, horizontal: 'left' });
+      r.height = Math.max(15, 13.5 * Math.max(hLines(label, 44), hLines(val, 62)));
+    });
+  });
+
+  ws.addRow([]).height = 6;
+  const nb = ws.addRow(['PENGISIAN DATA HARUS DIISI DENGAN BENAR / SESUAI DENGAN IJAZAH SEBELUMNYA, DICEK DULU SEBELUM TERJADI KEKELIRUAN.\nNB: Nomor ijazah diisi dengan nomor yang ada di kanan bawah ijazah. Untuk SMP Negeri biasanya memakai kode DN-(Nomor), sedangkan untuk MTs biasanya dengan kode MTs-(Nomor).']);
+  ws.mergeCells(nb.number, 1, nb.number, 4);
+  nb.getCell(1).font = { ...FONT, size: 8 }; nb.getCell(1).alignment = { wrapText: true, vertical: 'top' };
+  nb.getCell(1).border = { top: thin, bottom: thin, left: thin, right: thin }; nb.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+  nb.height = 36;
+
+  ws.addRow([]).height = 8;
+  const tglCetak = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const sg = (b, d) => { const r = ws.addRow(['', b, '', d]); r.getCell(2).alignment = { horizontal: 'center', wrapText: true }; r.getCell(4).alignment = { horizontal: 'center', wrapText: true }; r.getCell(2).font = FONT; r.getCell(4).font = FONT; return r; };
+  sg('Mengetahui,', `${appSettings.kota_sekolah || '.............................'}, ${tglCetak}`);
+  sg('Orang Tua / Wali Siswa', 'Siswa yang bersangkutan,');
+  ws.addRow([]).height = 40;
+  const nm = sg('( ................................................. )', `( ${s.nama_lengkap || '.....................................'} )`);
+  nm.getCell(4).font = { ...FONT, bold: true };
+
+  ws.pageSetup = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 1, horizontalCentered: true,
+    margins: { left: 0.5, right: 0.5, top: 0.4, bottom: 0.4, header: 0.2, footer: 0.2 } };
+  ws.views = [{ showGridLines: false }];
+}
+
+async function exportExcel(list, fileName) {
+  if (!list.length) { Swal.fire('Kosong', 'Tidak ada data untuk diunduh.', 'info'); return; }
+  if (typeof ExcelJS === 'undefined') { Swal.fire('Error', 'Library Excel gagal dimuat. Periksa koneksi internet lalu muat ulang halaman.', 'error'); return; }
+  Swal.fire({ title: 'Menyiapkan Excel...', text: list.length + ' lembar blangko', allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+  try {
+    await new Promise(r => setTimeout(r, 50)); // beri waktu popup tampil
+    const wb = new ExcelJS.Workbook();
+    const used = new Set();
+    [...list].sort((a, b) => String(a.nama_lengkap || '').localeCompare(String(b.nama_lengkap || ''))).forEach((s, i) => {
+      let nm = (String(s.nama_lengkap || 'Siswa ' + (i + 1)).replace(/[\\\/?*\[\]:]/g, ' ').trim() || 'Siswa').slice(0, 28);
+      while (used.has(nm.toLowerCase())) nm = nm.slice(0, 25) + ' ' + (i + 1);
+      used.add(nm.toLowerCase());
+      isiSheetBlangko(wb.addWorksheet(nm), s);
+    });
+    const buf = await wb.xlsx.writeBuffer();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    a.download = fileName; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    Swal.close();
+  } catch (err) {
+    Swal.fire('Gagal', 'Tidak bisa membuat file Excel: ' + err.message, 'error');
+  }
+}
+
+function exportCSVKelas(kelas) {
       const tp = (appSettings.tahun_pelajaran || '').replace('/', '-');
       exportExcel(allStudents.filter(s => (s.kelas_jurusan || 'Tanpa Kelas') === kelas), `Biodata_${kelas.replace(/[^a-zA-Z0-9_-]/g, '_')}_${tp}.xlsx`, kelas);
     }
