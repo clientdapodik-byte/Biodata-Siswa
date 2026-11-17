@@ -1830,7 +1830,7 @@ Terima kasih.`;
         height: 200,
         colorDark: "#0f172a",
         colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
+        correctLevel: QRCode.CorrectLevel.M
       });
     }
 
@@ -1847,13 +1847,34 @@ Terima kasih.`;
     }
 
     function downloadQRImage() {
-      const img = document.querySelector('#qrcodeCanvas img') || document.querySelector('#qrcodeCanvas canvas');
-      if (!img) return;
-      const dataUrl = img.tagName === 'IMG' ? img.src : img.toDataURL('image/png');
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = `QR_Biodata_Siswa_${(appSettings.tahun_pelajaran || '').replace('/', '-')}.png`;
-      a.click();
+      const url = document.getElementById('studentFormUrlInput').value.trim();
+      if (!url) return;
+      // QR dibuat ulang beresolusi tinggi (bukan gambar pratinjau 200px yang pecah saat diperbesar)
+      const tmp = document.createElement('div');
+      tmp.style.cssText = 'position:fixed;left:-9999px;top:0';
+      document.body.appendChild(tmp);
+      new QRCode(tmp, { text: url, width: 1000, height: 1000, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+      const src = tmp.querySelector('canvas') || tmp.querySelector('img');
+      const draw = () => {
+        const pad = 100, cap = 150, W = 1000 + pad * 2, H = W + cap;
+        const c = document.createElement('canvas'); c.width = W; c.height = H;
+        const g = c.getContext('2d');
+        g.fillStyle = '#ffffff'; g.fillRect(0, 0, W, H);
+        g.imageSmoothingEnabled = false;
+        g.drawImage(src, pad, pad, 1000, 1000);
+        g.fillStyle = '#0f172a'; g.textAlign = 'center';
+        g.font = 'bold 44px "Plus Jakarta Sans", Arial, sans-serif';
+        g.fillText('Scan untuk mengisi Biodata Siswa', W / 2, W + 20, W - 80);
+        g.font = '600 32px "Plus Jakarta Sans", Arial, sans-serif'; g.fillStyle = '#475569';
+        g.fillText((appSettings.nama_sekolah || '') + ' • TP ' + (appSettings.tahun_pelajaran || ''), W / 2, W + 75, W - 80);
+        c.toBlob(blob => {
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `QR_Biodata_Siswa_${(appSettings.tahun_pelajaran || '').replace('/', '-')}.png`;
+          a.click(); tmp.remove();
+        }, 'image/png');
+      };
+      if (src.tagName === 'IMG' && !src.complete) src.onload = draw; else draw();
     }
 
     function cetakPosterQR() {
