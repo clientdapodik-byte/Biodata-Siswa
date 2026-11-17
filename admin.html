@@ -11,7 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
   <style id="dynamicPageStyle">
-    @page { size: 215mm 330mm; margin: 10mm 12mm; }
+    @page { size: A4 portrait; margin: 10mm 12mm; }
   </style>
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f1f5f9; }
@@ -52,6 +52,7 @@
       page-break-after: always;
     }
     .paper-sheet:last-child { page-break-after: auto; margin-bottom: 0; }
+    .paper-sheet { break-inside: avoid; }
     .paper-sheet.size-a4 { width: 210mm; min-height: 297mm; }
     .paper-sheet.compact-mode { font-size: 9.1pt; line-height: 1.16; padding: 9mm 13mm; }
     .paper-sheet table { border-collapse: collapse; width: 100%; }
@@ -628,10 +629,10 @@
               <div class="flex flex-wrap items-center gap-2">
                 <select id="paperSizeSelect" onchange="ubahUkuranKertas()"
                   class="border border-slate-300 text-slate-800 text-xs font-bold rounded-xl px-3 py-2.5 bg-slate-50 focus:outline-none focus:border-blue-600">
-                  <option value="f4-compact">Kertas F4 / Folio (1 Hal. Padat)</option>
+                  <option value="a4-normal" selected>Kertas A4 (Standar)</option>
+                  <option value="a4-compact">Kertas A4 (Padat)</option>
                   <option value="f4-normal">Kertas F4 / Folio (Standar)</option>
-                  <option value="a4-compact">Kertas A4 (1 Hal. Padat)</option>
-                  <option value="a4-normal">Kertas A4 (Standar)</option>
+                  <option value="f4-compact">Kertas F4 / Folio (Padat)</option>
                 </select>
                 <button onclick="cetakBlangkoSekarang()" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/25 transition">
                   <i data-lucide="printer" class="w-4 h-4"></i> Cetak / Simpan PDF
@@ -2133,6 +2134,34 @@ Terima kasih.`;
       scan(document.body);
       new MutationObserver(m => m.forEach(r => r.addedNodes.forEach(n => n.nodeType === 1 && scan(n)))).observe(document.body, { childList: true, subtree: true });
     })();
+  </script>
+  <script>
+    // ===== Cetak: setiap blangko otomatis diperkecil agar muat 1 lembar =====
+    function fitSheetsForPrint() {
+      if (document.body.getAttribute('data-print-target') !== 'blangko') return;
+      const a4 = document.getElementById('paperSizeSelect').value.startsWith('a4');
+      const mm = v => v * 96 / 25.4;
+      const W = mm((a4 ? 210 : 215) - 24), H = mm((a4 ? 297 : 330) - 20 - 2);
+      document.querySelectorAll('.paper-sheet').forEach(el => {
+        const st = el.style;
+        st.removeProperty('transform'); st.removeProperty('margin-bottom');
+        const keep = [st.width, st.padding, st.minHeight];
+        st.width = W + 'px'; st.padding = '0'; st.minHeight = '0';
+        const h = el.scrollHeight;
+        st.width = keep[0]; st.padding = keep[1]; st.minHeight = keep[2];
+        const z = Math.min(1, (H / h) * 0.99);
+        if (z < 1) {
+          st.setProperty('transform', `scale(${z})`, 'important');
+          st.setProperty('transform-origin', 'top center', 'important');
+          st.setProperty('margin-bottom', `-${h * (1 - z)}px`, 'important');
+        }
+      });
+    }
+    function resetSheetsAfterPrint() {
+      document.querySelectorAll('.paper-sheet').forEach(el => { el.style.removeProperty('transform'); el.style.removeProperty('transform-origin'); el.style.removeProperty('margin-bottom'); });
+    }
+    addEventListener('beforeprint', fitSheetsForPrint);
+    addEventListener('afterprint', resetSheetsAfterPrint);
   </script>
 </body>
 </html>
