@@ -306,6 +306,64 @@
       body[data-print-target="blangko"] .paper-sheet { animation: none !important; }
       html, body { height: auto !important; overflow: visible !important; }
     }
+  /* ===== RAPIKAN TATA LETAK DASHBOARD ===== */
+
+body { background: #eef4f7; }
+main { max-width: 80rem; }
+
+/* --- 1. Tenangkan animasi dekoratif yang terus berulang --- */
+.ico-chip::after, .bar-grow::after,
+.main-bg .mb-blob.b3, .main-bg .wave { display: none !important; }
+.from-cyan-600.to-sky-700, .bg-cyan-600, .nav-item.active,
+#navIssueBadge, .hero { animation: none !important; }
+tbody tr, section:not(.hidden) .card { animation: none !important; }
+section[id^="tab-"] { animation: fadeUp .25s ease both !important; }
+.grid > .card:not(.overflow-hidden):hover,
+.card:hover { transform: none; box-shadow: 0 1px 2px rgba(15,23,42,.05); }
+.nav-item:hover { transform: none; }
+
+/* --- 2. Kartu & header kartu lebih rapi dan konsisten --- */
+.card { border-radius: 14px; }
+.card-head { padding: 14px 20px; }
+.card-body { padding: 20px; }
+.tbl th, .tbl td { padding: 11px 14px; }
+
+/* --- 3. Sidebar: jarak menu lebih rapat, label grup jelas --- */
+#sidebar nav { gap: 2px; padding: 12px; }
+.nav-label { padding: 16px 12px 6px; color: #6faac0; }
+.nav-item { padding: 10px 12px !important; }
+
+/* --- 4. Banner sambutan lebih ringkas --- */
+.hero { padding: 16px 22px !important; }
+
+/* --- 5. Ringkasan: kartu statistik sama tinggi --- */
+#tab-overview > div:nth-child(2) .card {
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+
+/* --- 6. Ringkasan: susun ulang menjadi 2 baris seimbang (desktop) ---
+   Baris 1: Sebaran per Jurusan (2/3)  |  Komposisi Siswa (1/3)
+   Baris 2: Biodata Terbaru   (2/3)    |  Aksi Cepat      (1/3)  */
+@media (min-width: 1024px) {
+  #tab-overview > div:last-child {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+  }
+  /* kolom kanan "dilebur" agar 3 isinya ikut ditata oleh grid induk */
+  #tab-overview > div:last-child > div:last-child { display: contents; }
+  #tab-overview > div:last-child > div:last-child > * { margin: 0 !important; }
+
+  #tab-overview > div:last-child > .card              { grid-column: 1 / span 2; grid-row: 1; }
+  #tab-overview > div:last-child > div:last-child > :nth-child(1) { grid-column: 3; grid-row: 1; }
+  #tab-overview > div:last-child > div:last-child > :nth-child(2) { grid-column: 1 / span 2; grid-row: 2; }
+  #tab-overview > div:last-child > div:last-child > :nth-child(3) { grid-column: 3; grid-row: 2; }
+
+  /* Aksi Cepat: tombol ditumpuk 1 kolom karena kolomnya sempit */
+  #tab-overview .bg-gradient-to-r .grid { grid-template-columns: 1fr; }
+  /* daftar jurusan ikut tinggi kartu, tidak terpotong kecil */
+  #classBreakdownList { max-height: 22rem; }
+}
+
   </style>
 </head>
 <body class="text-slate-800 antialiased" data-print-target="blangko">
@@ -606,7 +664,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,.8fr)] gap-3">
               <div class="relative">
                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none"></i>
-                <input type="text" id="searchInput" oninput="filterTabel()" placeholder="Cari Nama, NISN, SMP..."
+                <input type="text" id="searchInput" oninput="filterTabel()" placeholder="Cari Nama, NISN, NIK, No. KK, SMP..."
                   class="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-base sm:text-sm focus:outline-none focus:border-cyan-600">
               </div>
 
@@ -1307,6 +1365,10 @@
         }
         if (res.status === 'success') {
           allStudents = res.data || [];
+          // data lama: ambil nomor HP orang tua dari kolom lama bila kolom baru kosong
+          allStudents.forEach(s => ['ayah', 'ibu', 'wali'].forEach(p => {
+            if (!s[p + '_no_hp']) s[p + '_no_hp'] = String(s[p + '_No. hp'] || s[p + '_alamat_hp'] || '').trim();
+          }));
           if (res.settings) {
             appSettings = Object.assign(appSettings, res.settings);
             terapkanPengaturanKeUI();
@@ -1516,6 +1578,8 @@
         const matchKeyword = !keyword ||
           (s.nama_lengkap && s.nama_lengkap.toLowerCase().includes(keyword)) ||
           (s.nisn && s.nisn.toLowerCase().includes(keyword)) ||
+          (s.nik && String(s.nik).includes(keyword)) ||
+          (s.no_kk && String(s.no_kk).includes(keyword)) ||
           (s.smp_asal && s.smp_asal.toLowerCase().includes(keyword));
         return matchKelas && matchGender && matchKeyword;
       });
@@ -1641,6 +1705,8 @@
 
       if (rawNisn && nisnCounts && nisnCounts[rawNisn] > 1) issues.push('NISN Duplikat');
       if (cleanNisn.length !== 10) issues.push('NISN bukan 10 digit');
+      if (String(s.nik || '').replace(/\D/g, '').length !== 16) issues.push('NIK bukan 16 digit');
+      if (String(s.no_kk || '').replace(/\D/g, '').length !== 16) issues.push('No. KK bukan 16 digit');
       if (!s.no_ijazah || s.no_ijazah === '-' || s.no_ijazah.trim().length < 4) issues.push('No. Ijazah SMP belum diisi');
       if (cleanHp.length < 10) issues.push('No. HP siswa kurang valid');
       if (!s.golongan_darah || s.golongan_darah === '-' || s.golongan_darah === 'Tidak Tahu') issues.push('Golongan darah belum diisi');
@@ -1898,7 +1964,7 @@
 
     function renderSamplePrint() {
       const sample = {
-        nisn: '0089123456', nama_lengkap: 'AHMAD RIZKY PRATAMA', nama_panggilan: 'Rizky',
+        nisn: '0089123456', nik: '3273010514100001', no_kk: '3273012003110002', nama_lengkap: 'AHMAD RIZKY PRATAMA', nama_panggilan: 'Rizky',
         kelas_jurusan: 'Teknik Komputer dan Jaringan', jenis_kelamin: 'Laki-laki', tempat_lahir: 'Bandung',
         tanggal_lahir: '2010-05-14', agama: 'Islam', kewarganegaraan: 'Indonesia',
         anak_ke: '1', jml_saudara_kandung: '2', jml_saudara_tiri: '0', jml_saudara_angkat: '0',
@@ -1913,11 +1979,11 @@
         ayah_nama: 'Budi Santoso, S.Pd.', ayah_tempat_lahir: 'Garut', ayah_tgl_lahir: '1980-08-12',
         ayah_agama: 'Islam', ayah_kewarganegaraan: 'Indonesia', ayah_pendidikan: 'S1',
         ayah_pekerjaan: 'PNS', ayah_penghasilan: 'Rp. 2,000,000 - Rp. 4,999,999',
-        ayah_alamat_hp: 'Jl. Merdeka No. 45 Bandung / 081222333444', ayah_status: 'Masih Hidup',
+        ayah_no_hp: '081222333444', ayah_status: 'Masih Hidup',
         ibu_nama: 'Siti Aminah', ibu_tempat_lahir: 'Bandung', ibu_tgl_lahir: '1983-11-20',
         ibu_agama: 'Islam', ibu_kewarganegaraan: 'Indonesia', ibu_pendidikan: 'SMA / sederajat',
         ibu_pekerjaan: 'Tidak bekerja', ibu_penghasilan: 'Tidak Berpenghasilan',
-        ibu_alamat_hp: 'Jl. Merdeka No. 45 Bandung / 081333444555', ibu_status: 'Masih Hidup',
+        ibu_no_hp: '081333444555', ibu_status: 'Masih Hidup',
         wali_nama: '-', hobi_kesenian: 'Gitar', hobi_olahraga: 'Futsal',
         hobi_organisasi: 'OSIS & Pramuka', hobi_lain: 'Desain Grafis',
         bs1_tahun: '2025', bs1_tingkat: 'SMP Kelas IX', bs1_dari: 'PIP / Pemda'
@@ -1995,6 +2061,16 @@
             <td style="padding: 3px 0; font-weight: bold; border-top: 1px solid #cbd5e1;">:</td>
             <td style="padding: 3px 8px; font-weight: bold; border-top: 1px solid #cbd5e1; font-family: 'Courier New', monospace;">${escapeHtml(s.nisn) || '-'}</td>
           </tr>
+        <tr>
+            <td style="padding: 3px 8px; font-weight: bold; border-top: 1px solid #cbd5e1;">NIK</td>
+            <td style="padding: 3px 0; font-weight: bold; border-top: 1px solid #cbd5e1;">:</td>
+            <td style="padding: 3px 8px; font-weight: bold; border-top: 1px solid #cbd5e1; font-family: 'Courier New', monospace;">${escapeHtml(s.nik) || '-'}</td>
+          </tr>
+          <tr>
+            <td style="padding: 3px 8px; font-weight: bold; border-top: 1px solid #cbd5e1;">NO. KK</td>
+            <td style="padding: 3px 0; font-weight: bold; border-top: 1px solid #cbd5e1;">:</td>
+            <td style="padding: 3px 8px; font-weight: bold; border-top: 1px solid #cbd5e1; font-family: 'Courier New', monospace;">${escapeHtml(s.no_kk) || '-'}</td>
+          </tr>
         </table>
 
         <div class="sec-title">A. Keterangan Tentang Diri Siswa</div>
@@ -2045,7 +2121,7 @@
           ${rowPlain('26. Agama / Kewarganegaraan', `${escapeHtml(s.ayah_agama) || '-'} &nbsp;/&nbsp; ${escapeHtml(s.ayah_kewarganegaraan) || '-'}`)}
           ${rowPlain('27. Pendidikan / Pekerjaan', `${escapeHtml(s.ayah_pendidikan) || '-'} &nbsp;/&nbsp; ${escapeHtml(s.ayah_pekerjaan) || '-'}`)}
           ${rowPlain('28. Penghasilan per bulan', escapeHtml(s.ayah_penghasilan))}
-          ${rowPlain('29. Alamat rumah / No. Telp / HP', escapeHtml(s.ayah_alamat_hp))}
+          ${rowPlain('29. No. HP / WhatsApp', escapeHtml(s.ayah_no_hp))}
         </table>
 
         <div class="sec-title">G. Keterangan Tentang Ibu Kandung</div>
@@ -2055,7 +2131,7 @@
           ${rowPlain('32. Agama / Kewarganegaraan', `${escapeHtml(s.ibu_agama) || '-'} &nbsp;/&nbsp; ${escapeHtml(s.ibu_kewarganegaraan) || '-'}`)}
           ${rowPlain('33. Pendidikan / Pekerjaan', `${escapeHtml(s.ibu_pendidikan) || '-'} &nbsp;/&nbsp; ${escapeHtml(s.ibu_pekerjaan) || '-'}`)}
           ${rowPlain('34. Penghasilan / Pengeluaran per bulan', escapeHtml(s.ibu_penghasilan))}
-          ${rowPlain('35. Alamat rumah / No. Telp / HP', escapeHtml(s.ibu_alamat_hp))}
+          ${rowPlain('35. No. HP / WhatsApp', escapeHtml(s.ibu_no_hp))}
         </table>
 
         <div class="sec-title">H. Keterangan Tentang Wali (Opsional)</div>
@@ -2063,7 +2139,7 @@
           ${rowPlain('36. Nama Wali / Status', s.wali_nama && s.wali_nama !== '-' ? `${escapeHtml(s.wali_nama)} (${escapeHtml(s.wali_status) || '-'})` : '-')}
           ${rowPlain('37. Tempat / Tanggal lahir', s.wali_tempat_lahir && s.wali_tempat_lahir !== '-' ? `${escapeHtml(s.wali_tempat_lahir)}, ${formatTanggalIndo(s.wali_tgl_lahir)}` : '-')}
           ${rowPlain('38. Pendidikan / Pekerjaan', s.wali_pendidikan && s.wali_pendidikan !== '-' ? `${escapeHtml(s.wali_pendidikan)} / ${escapeHtml(s.wali_pekerjaan) || '-'}` : '-')}
-          ${rowPlain('39. Alamat rumah / No. Telp / HP', escapeHtml(s.wali_alamat_hp))}
+          ${rowPlain('39. No. HP / WhatsApp', escapeHtml(s.wali_no_hp))}
         </table>
 
         <div class="sec-title">I. Kegemaran Siswa</div>
@@ -2206,11 +2282,11 @@ Terima kasih.`;
     const TRANSPORT = ['Jalan kaki','Angkutan umum/bus/pete-pete','Mobil/bus antar jemput','Kereta api','Ojek','Andong/bendi/sado/dokar/delman/becak','Perahu penyeberangan/rakit/getek','Kuda','Sepeda','Sepeda motor','Mobil pribadi','Lainnya'];
     const AGAMA = ['Islam','Kristen','Katholik','Hindu','Budha','Khonghucu','Kepercayaan kpd Tuhan YME'];
     // t: s=dropdown, d=tanggal, n=angka, a=textarea
-    const ortuF = (p, L) => [['nama','Nama Lengkap '+L],['status','Status '+L,'s',['Masih Hidup','Meninggal Dunia']],['tempat_lahir','Tempat Lahir '+L],['tgl_lahir','Tanggal Lahir '+L,'d'],['agama','Agama '+L,'s',AGAMA],['kewarganegaraan','Kewarganegaraan '+L],['pendidikan','Pendidikan Terakhir '+L,'s',PEND],['pekerjaan','Pekerjaan '+L,'s',PEKERJAAN],['penghasilan','Penghasilan / Pengeluaran per Bulan '+L,'s',GAJI],['alamat_hp','Alamat Rumah & No. Telp/HP '+L,'a']].map(([k,l,t,o]) => ({ key: p+'_'+k, label: l, t, o }));
+    const ortuF = (p, L) => [['nama','Nama Lengkap '+L],['status','Status '+L,'s',['Masih Hidup','Meninggal Dunia']],['tempat_lahir','Tempat Lahir '+L],['tgl_lahir','Tanggal Lahir '+L,'d'],['agama','Agama '+L,'s',AGAMA],['kewarganegaraan','Kewarganegaraan '+L],['pendidikan','Pendidikan Terakhir '+L,'s',PEND],['pekerjaan','Pekerjaan '+L,'s',PEKERJAAN],['penghasilan','Penghasilan / Pengeluaran per Bulan '+L,'s',GAJI],['no_hp','No. HP / WhatsApp '+L]].map(([k,l,t,o]) => ({ key: p+'_'+k, label: l, t, o }));
     const beaF = [1,2,3].flatMap(n => [{key:`bs${n}_tahun`,label:`Beasiswa ${n} — Tahun`},{key:`bs${n}_tingkat`,label:`Beasiswa ${n} — Tingkat / Kelas`},{key:`bs${n}_dari`,label:`Beasiswa ${n} — Sumber / Dari`}]);
     const groupedEditableFields = [
       { group: 'A. Keterangan Tentang Diri Siswa', fields: [
-        {key:'nisn',label:'NISN'},{key:'kelas_jurusan',label:'Jurusan',t:'s',o:JURUSAN},{key:'nama_lengkap',label:'Nama Lengkap Siswa'},{key:'nama_panggilan',label:'Nama Panggilan'},
+        {key:'nisn',label:'NISN'},{key:'nik',label:'NIK'},{key:'no_kk',label:'No. KK'},{key:'kelas_jurusan',label:'Jurusan',t:'s',o:JURUSAN},{key:'nama_lengkap',label:'Nama Lengkap Siswa'},{key:'nama_panggilan',label:'Nama Panggilan'},
         {key:'jenis_kelamin',label:'Jenis Kelamin',t:'s',o:['Laki-laki','Perempuan']},{key:'tempat_lahir',label:'Tempat Lahir'},{key:'tanggal_lahir',label:'Tanggal Lahir',t:'d'},
         {key:'agama',label:'Agama',t:'s',o:AGAMA},{key:'kewarganegaraan',label:'Kewarganegaraan'},{key:'bahasa_sehari',label:'Bahasa Sehari-hari'},{key:'anak_ke',label:'Anak Ke-',t:'n'},
         {key:'status_yatim',label:'Status Orang Tua',t:'s',o:['Lengkap (Masih Hidup Semua)','Yatim','Piatu','Yatim Piatu']},
@@ -2255,7 +2331,7 @@ Terima kasih.`;
       if (f.t === 'd') { const m = v.match(/^\d{4}-\d{2}-\d{2}/); return `<input type="date" name="${f.key}" value="${m ? m[0] : ''}" class="${cls}">`; }
       if (f.t === 'n') return `<input type="number" min="0" name="${f.key}" value="${escapeHtml(v)}" class="${cls}">`;
       if (f.t === 'a') return `<textarea name="${f.key}" rows="2" class="${cls}">${escapeHtml(v)}</textarea>`;
-      const num = f.key === 'nisn' || f.key === 'no_hp' ? ' inputmode="numeric"' : '';
+      const num = ['nisn','nik','no_kk','no_hp'].includes(f.key) ? ' inputmode="numeric"' : '';
       return `<input type="text" name="${f.key}" value="${escapeHtml(v)}"${num} class="${cls}">`;
     }
 
