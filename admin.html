@@ -140,6 +140,17 @@
     .dd-pop li.sel{background:linear-gradient(120deg,#e0e7ff,#ede9fe);color:#4338ca;font-weight:700}.dd-pop li.sel::after{content:"✓"}
     .dd-pop .none{padding:12px;text-align:center;color:#94a3b8;font-size:12px}
     @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+    @media print {
+      #loginScreen, aside, header, #editModal, .dd-pop, .toast { display: none !important; }
+      #dashboardScreen { display: block !important; min-height: 0 !important; }
+      #dashboardScreen > div { display: block !important; }
+      body[data-print-target="blangko"] main { padding: 0 !important; max-width: none !important; margin: 0 !important; }
+      body[data-print-target="blangko"] main > section:not(#tab-print) { display: none !important; }
+      body[data-print-target="blangko"] #tab-print { animation: none !important; }
+      body[data-print-target="blangko"] #tab-print > div:not(.no-print) { background: none !important; padding: 0 !important; box-shadow: none !important; overflow: visible !important; border-radius: 0 !important; }
+      body[data-print-target="blangko"] #printContainer { position: static !important; }
+      body[data-print-target="blangko"] .paper-sheet { animation: none !important; }
+    }
   </style>
 </head>
 <body class="text-slate-800 antialiased" data-print-target="blangko">
