@@ -364,6 +364,9 @@ section[id^="tab-"] { animation: fadeUp .25s ease both !important; }
   #classBreakdownList { max-height: 22rem; }
 }
 
+/* ===== ARSIP: sembunyikan modal lihat arsip saat cetak ===== */
+@media print { #arsipViewModal { display: none !important; } }
+
   </style>
 </head>
 <body class="text-slate-800 antialiased" data-print-target="blangko">
@@ -460,6 +463,11 @@ section[id^="tab-"] { animation: fadeUp .25s ease both !important; }
         <button onclick="switchTab('analytics')" id="nav-analytics" class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-cyan-100/80 hover:bg-white/10 hover:text-white transition whitespace-nowrap">
           <i data-lucide="pie-chart" class="w-4 h-4 shrink-0"></i>
           <span>Analisis<span> Demografi & Sosial</span></span>
+        </button>
+
+        <button onclick="switchTab('arsip')" id="nav-arsip" class="nav-item flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-cyan-100/80 hover:bg-white/10 hover:text-white transition whitespace-nowrap">
+          <i data-lucide="archive" class="w-4 h-4 shrink-0"></i>
+          <span>Arsip<span> Siswa Lama</span></span>
         </button>
 
         <p class="nav-label">Cetak & Bagikan</p>
@@ -684,6 +692,9 @@ section[id^="tab-"] { animation: fadeUp .25s ease both !important; }
             <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
               <p id="resultCount" class="text-xs font-semibold text-slate-500">Menampilkan 0 siswa</p>
               <div class="flex flex-wrap items-center gap-2">
+                <button id="bulkArchiveBtn" onclick="arsipkanTerpilih()" class="hidden inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-3.5 py-2.5 rounded-xl shadow transition">
+                  📦 Arsipkan Terpilih (<span id="selectedCountArsip">0</span>)
+                </button>
                 <button id="bulkDeleteBtn" onclick="hapusTerpilih()" class="hidden inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow transition">
                   <i data-lucide="trash-2" class="w-4 h-4"></i> Hapus Terpilih (<span id="selectedCount">0</span>)
                 </button>
@@ -1158,7 +1169,110 @@ section[id^="tab-"] { animation: fadeUp .25s ease both !important; }
           </form>
         </section>
 
+        <!-- =================================================================
+             MENU 8: ARSIP SISWA LAMA
+             ================================================================= -->
+        <section id="tab-arsip" class="hidden space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div class="card p-4 sm:p-5 flex items-center gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 text-xl">🗄️</div>
+              <div>
+                <p class="text-xs font-bold text-slate-400 uppercase">Total Siswa di Arsip</p>
+                <p id="arsipStatTotal" class="text-xl sm:text-2xl font-extrabold text-slate-900">0</p>
+              </div>
+            </div>
+            <div class="card p-4 sm:p-5 flex items-center gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 text-xl">📅</div>
+              <div>
+                <p class="text-xs font-bold text-slate-400 uppercase">Jumlah Tahun Arsip</p>
+                <p id="arsipStatTahun" class="text-xl sm:text-2xl font-extrabold text-amber-600">0</p>
+              </div>
+            </div>
+            <div class="card p-4 sm:p-5 flex items-center gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 text-xl">🟢</div>
+              <div>
+                <p class="text-xs font-bold text-slate-400 uppercase">Siswa Aktif Saat Ini</p>
+                <p id="arsipStatAktif" class="text-xl sm:text-2xl font-extrabold text-emerald-600">0</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card p-3 sm:p-4 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3">
+              <div class="relative">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none"></i>
+                <input type="text" id="arsipSearchInput" oninput="filterArsip()" placeholder="Cari Nama, NISN, NIK, SMP asal..."
+                  class="w-full border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-base sm:text-sm focus:outline-none focus:border-cyan-600">
+              </div>
+              <select id="arsipTahunFilter" onchange="filterArsip()" class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm bg-white focus:outline-none focus:border-cyan-600">
+                <option value="">Semua Tahun Arsip</option>
+              </select>
+              <select id="arsipKelasFilter" onchange="filterArsip()" class="w-full border border-slate-200 rounded-xl px-3.5 py-2 text-sm bg-white focus:outline-none focus:border-cyan-600">
+                <option value="">Semua Jurusan</option>
+              </select>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-100">
+              <p id="arsipResultCount" class="text-xs font-semibold text-slate-500">Menampilkan 0 siswa</p>
+              <div class="flex flex-wrap items-center gap-2">
+                <button id="arsipRestoreBtn" onclick="kembalikanArsipTerpilih()" class="hidden inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow transition">
+                  ↩️ Kembalikan Terpilih (<span id="arsipSelCount1">0</span>)
+                </button>
+                <button id="arsipDeleteBtn" onclick="hapusArsipTerpilih()" class="hidden inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow transition">
+                  🗑️ Hapus Permanen (<span id="arsipSelCount2">0</span>)
+                </button>
+                <button onclick="exportArsip()" class="inline-flex items-center gap-2 bg-cyan-900 hover:bg-cyan-800 text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl shadow-sm transition">
+                  <i data-lucide="download" class="w-4 h-4"></i> Export Excel
+                </button>
+                <button onclick="arsipkanSemua()" class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl shadow-sm transition">
+                  📦 Arsipkan Semua Siswa Aktif
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card overflow-hidden">
+            <div class="tbl-scroll max-h-[70vh]">
+              <table class="tbl w-full text-left border-collapse">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <th class="w-10"><input type="checkbox" id="arsipSelectAll" onchange="toggleSelectAllArsip(this)" class="w-4 h-4 rounded accent-cyan-600"></th>
+                    <th class="hidden md:table-cell">NISN</th>
+                    <th>Nama Lengkap</th>
+                    <th class="hidden md:table-cell">Jurusan</th>
+                    <th>Tahun Arsip</th>
+                    <th class="text-center">L/P</th>
+                    <th class="text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="arsipTableBody" class="divide-y divide-slate-100 text-sm">
+                  <tr><td colspan="7" class="py-12 text-center text-slate-400">Memuat arsip...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
       </main>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       MODAL LIHAT DATA ARSIP
+       ===================================================================== -->
+  <div id="arsipViewModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-end sm:items-center justify-center sm:p-6">
+    <div class="bg-white max-w-5xl w-full sm:rounded-3xl rounded-t-3xl shadow-2xl overflow-hidden h-[94vh] flex flex-col">
+      <div class="bg-gradient-to-r from-slate-700 to-slate-900 text-white px-4 sm:px-6 py-3.5 flex justify-between items-center gap-3 shrink-0">
+        <div class="min-w-0">
+          <h3 class="font-bold text-base">Lihat Data Arsip</h3>
+          <p id="arsipViewInfo" class="text-[11px] text-slate-300 truncate"></p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="arsipViewPrintBtn" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition">🖨️ Cetak</button>
+          <button onclick="tutupModal('arsipViewModal')" class="bg-white/15 hover:bg-white/25 text-white text-sm px-3 py-1 rounded-xl transition">✕</button>
+        </div>
+      </div>
+      <div id="arsipViewBody" class="flex-1 overflow-auto bg-cyan-900 p-3 sm:p-6"></div>
     </div>
   </div>
 
@@ -1263,12 +1377,13 @@ section[id^="tab-"] { animation: fadeUp .25s ease both !important; }
     addEventListener('keydown', e => { if (e.key === 'Escape') toggleSidebar(false); });
 
     function switchTab(tabName) {
-      const tabs = ['overview', 'students', 'classes', 'analytics', 'print', 'qrcode', 'settings'];
+      const tabs = ['overview', 'students', 'classes', 'analytics', 'arsip', 'print', 'qrcode', 'settings'];
       const titles = {
         overview: 'Ringkasan & Statistik',
         students: 'Data Biodata Siswa',
         classes: 'Rekap & Audit Jurusan',
         analytics: 'Analisis Demografi & Sosial',
+        arsip: 'Arsip Siswa Lama',
         print: 'Pusat Cetak Blangko',
         qrcode: 'QR Code & Sebar Link',
         settings: 'Pengaturan & Tahun Pelajaran'
@@ -1298,6 +1413,10 @@ section[id^="tab-"] { animation: fadeUp .25s ease both !important; }
 
       if (tabName === 'qrcode') {
         generateQRCode();
+      }
+
+      if (tabName === 'arsip') {
+        muatArsip();
       }
     }
 
@@ -1383,6 +1502,7 @@ section[id^="tab-"] { animation: fadeUp .25s ease both !important; }
           renderClassesTab();
           renderAnalyticsTab();
           generateQRCode();
+          document.getElementById('arsipStatAktif').innerText = allStudents.length;
         } else {
           Swal.fire('Gagal', res.message, 'error');
         }
@@ -1651,9 +1771,10 @@ section[id^="tab-"] { animation: fadeUp .25s ease both !important; }
 
     function updateBulkDeleteButton() {
       const checked = document.querySelectorAll('.row-checkbox:checked');
-      const btn = document.getElementById('bulkDeleteBtn');
       document.getElementById('selectedCount').innerText = checked.length;
-      btn.classList.toggle('hidden', checked.length === 0);
+      document.getElementById('selectedCountArsip').innerText = checked.length;
+      document.getElementById('bulkDeleteBtn').classList.toggle('hidden', checked.length === 0);
+      document.getElementById('bulkArchiveBtn').classList.toggle('hidden', checked.length === 0);
     }
 
     function hapusTerpilih() {
@@ -2565,6 +2686,230 @@ Terima kasih.`;
 
     function exportCSV() {
       exportExcel(filteredStudents, `Rekap_Biodata_Siswa_${(appSettings.tahun_pelajaran || '').replace('/', '-')}.xlsx`, 'Biodata Siswa');
+    }
+
+    // ================= ARSIP SISWA =================
+    let allArchive = [], filteredArchive = [];
+
+    function apiArsip(body) {
+      return fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(Object.assign({ password: adminPassword }, body)) }).then(r => r.json());
+    }
+
+    function jalankanAksiArsip(body, loadingText) {
+      Swal.fire({ title: loadingText, allowOutsideClick: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+      return apiArsip(body).then(res => {
+        if (res.status === 'unauthorized') { logout(); return; }
+        const ok = res.status === 'success';
+        Swal.fire(ok ? 'Berhasil' : 'Gagal', res.message, ok ? 'success' : 'error');
+        if (ok) { muatData(); muatArsip(); }
+      }).catch(() => Swal.fire('Error', 'Gagal terhubung ke server. Pastikan Code.gs sudah di-deploy ulang sebagai Versi Baru.', 'error'));
+    }
+
+    // ---- Arsipkan (dari daftar siswa aktif) ----
+    function arsipkanTerpilih() {
+      const rows = Array.from(document.querySelectorAll('.row-checkbox:checked')).map(cb => Number(cb.value));
+      if (!rows.length) return;
+      const nisns = rows.map(r => (allStudents.find(s => s.rowNumber === r) || {}).nisn || '');
+      Swal.fire({
+        title: `Arsipkan ${rows.length} siswa?`,
+        html: 'Data dipindahkan dari daftar aktif ke <b>Arsip</b> dan bisa dikembalikan kapan saja.',
+        input: 'text',
+        inputLabel: 'Label Tahun Pelajaran untuk arsip ini',
+        inputValue: appSettings.tahun_pelajaran || '',
+        showCancelButton: true,
+        confirmButtonColor: '#f59e0b',
+        confirmButtonText: 'Ya, Arsipkan',
+        cancelButtonText: 'Batal',
+        inputValidator: v => (!String(v).trim() ? 'Label tahun tidak boleh kosong' : null)
+      }).then(r => {
+        if (r.isConfirmed) jalankanAksiArsip({ action: 'archive', rowNumbers: rows, nisns, tahun: r.value.trim() }, 'Mengarsipkan data...');
+      });
+    }
+
+    function arsipkanSemua() {
+      if (!allStudents.length) { Swal.fire('Kosong', 'Tidak ada siswa aktif untuk diarsipkan.', 'info'); return; }
+      Swal.fire({
+        title: `Arsipkan SEMUA ${allStudents.length} siswa aktif?`,
+        html: 'Cocok dipakai saat pergantian tahun pelajaran. Seluruh data aktif dipindahkan ke <b>Arsip</b> dan daftar aktif menjadi kosong untuk angkatan baru.',
+        input: 'text',
+        inputLabel: 'Label Tahun Pelajaran untuk arsip ini',
+        inputValue: appSettings.tahun_pelajaran || '',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f59e0b',
+        confirmButtonText: 'Ya, Arsipkan Semua',
+        cancelButtonText: 'Batal',
+        inputValidator: v => (!String(v).trim() ? 'Label tahun tidak boleh kosong' : null)
+      }).then(r => {
+        if (r.isConfirmed) jalankanAksiArsip({ action: 'archive', mode: 'all', tahun: r.value.trim() }, 'Mengarsipkan semua data...');
+      });
+    }
+
+    // ---- Muat & tampilkan arsip ----
+    function muatArsip() {
+      const tbody = document.getElementById('arsipTableBody');
+      tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-500">⏳ Memuat data arsip...</td></tr>`;
+      document.getElementById('arsipStatAktif').innerText = allStudents.length;
+      return apiArsip({ action: 'getArchive' }).then(res => {
+        if (res.status === 'unauthorized') { logout(); return; }
+        if (res.status !== 'success') { Swal.fire('Gagal', res.message, 'error'); return; }
+        allArchive = res.data || [];
+        isiFilterArsip();
+        filterArsip();
+      }).catch(() => {
+        tbody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-rose-500">Gagal memuat arsip. Pastikan Code.gs sudah di-deploy ulang sebagai Versi Baru.</td></tr>`;
+      });
+    }
+
+    function isiFilterArsip() {
+      const th = document.getElementById('arsipTahunFilter'), kl = document.getElementById('arsipKelasFilter');
+      const prevT = th.value, prevK = kl.value;
+      const tahun = {}, kelas = {};
+      allArchive.forEach(s => {
+        const t = s.arsip_tahun || '-', k = s.kelas_jurusan || 'Tanpa Kelas';
+        tahun[t] = (tahun[t] || 0) + 1; kelas[k] = (kelas[k] || 0) + 1;
+      });
+      th.innerHTML = `<option value="">Semua Tahun Arsip (${allArchive.length})</option>` +
+        Object.keys(tahun).sort().reverse().map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)} (${tahun[t]})</option>`).join('');
+      kl.innerHTML = `<option value="">Semua Jurusan</option>` +
+        Object.keys(kelas).sort().map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)} (${kelas[k]})</option>`).join('');
+      th.value = tahun[prevT] ? prevT : '';
+      kl.value = kelas[prevK] ? prevK : '';
+      document.getElementById('arsipStatTotal').innerText = allArchive.length;
+      document.getElementById('arsipStatTahun').innerText = Object.keys(tahun).length;
+    }
+
+    function filterArsip() {
+      const kw = document.getElementById('arsipSearchInput').value.toLowerCase();
+      const tahun = document.getElementById('arsipTahunFilter').value;
+      const kelas = document.getElementById('arsipKelasFilter').value;
+      filteredArchive = allArchive.filter(s =>
+        (!tahun || (s.arsip_tahun || '-') === tahun) &&
+        (!kelas || (s.kelas_jurusan || 'Tanpa Kelas') === kelas) &&
+        (!kw || [s.nama_lengkap, s.nisn, s.nik, s.no_kk, s.smp_asal].some(v => String(v || '').toLowerCase().includes(kw)))
+      );
+      document.getElementById('arsipSelectAll').checked = false;
+      document.getElementById('arsipResultCount').innerText = `Menampilkan ${filteredArchive.length} dari ${allArchive.length} siswa arsip`;
+      renderArsip();
+      updateArsipButtons();
+    }
+
+    function renderArsip() {
+      const tbody = document.getElementById('arsipTableBody');
+      if (!filteredArchive.length) {
+        tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="empty-ico bob">🗄️</div>${allArchive.length ? 'Tidak ada arsip yang sesuai' : 'Arsip masih kosong'}<span>${allArchive.length ? 'Ubah kata kunci atau filter pencarian.' : 'Pilih siswa di menu Biodata Siswa lalu klik “Arsipkan Terpilih”, atau gunakan tombol “Arsipkan Semua Siswa Aktif”.'}</span></div></td></tr>`;
+        return;
+      }
+      tbody.innerHTML = filteredArchive.map(s => {
+        const isLaki = s.jenis_kelamin === 'Laki-laki';
+        const initial = (s.nama_lengkap || '?').charAt(0).toUpperCase();
+        return `
+        <tr class="hover:bg-cyan-50/40 transition-colors">
+          <td><input type="checkbox" value="${s.rowNumber}" onchange="updateArsipButtons()" class="arsip-checkbox w-4 h-4 rounded accent-cyan-600"></td>
+          <td class="hidden md:table-cell font-mono-code text-xs font-semibold text-slate-700">${escapeHtml(s.nisn)}</td>
+          <td>
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-8 h-8 rounded-full ${isLaki ? 'bg-sky-100 text-sky-700' : 'bg-pink-100 text-pink-700'} font-bold text-xs flex items-center justify-center shrink-0">${initial}</div>
+              <div class="min-w-0">
+                <span class="font-bold text-slate-900 block">${escapeHtml(s.nama_lengkap)}</span>
+                <span class="md:hidden block text-[11px] text-slate-500 font-medium">${escapeHtml(s.nisn)} • ${escapeHtml(s.kelas_jurusan)}</span>
+              </div>
+            </div>
+          </td>
+          <td class="hidden md:table-cell"><span class="bg-cyan-50 text-cyan-700 border border-cyan-200/70 text-xs font-semibold px-2.5 py-1 rounded-lg whitespace-nowrap">${escapeHtml(s.kelas_jurusan)}</span></td>
+          <td>
+            <span class="bg-amber-50 text-amber-800 border border-amber-200 text-xs font-bold px-2.5 py-1 rounded-lg whitespace-nowrap">${escapeHtml(s.arsip_tahun || '-')}</span>
+            <span class="block text-[10px] text-slate-400 mt-0.5">${escapeHtml(s.arsip_waktu)}</span>
+          </td>
+          <td class="text-center"><span class="${isLaki ? 'bg-sky-100 text-sky-800' : 'bg-pink-100 text-pink-800'} text-xs font-bold px-2 py-0.5 rounded-md">${isLaki ? 'L' : 'P'}</span></td>
+          <td>
+            <div class="flex items-center justify-center gap-1.5 flex-wrap">
+              <button onclick="lihatArsip(${s.rowNumber})" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-sm transition" title="Lihat">👁️<span> Lihat</span></button>
+              <button onclick="cetakArsip(${s.rowNumber})" class="bg-cyan-600 hover:bg-cyan-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-sm transition" title="Cetak">🖨️<span> Cetak</span></button>
+              <button onclick="kembalikanArsipSatu(${s.rowNumber})" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-2.5 py-1.5 rounded-lg font-semibold shadow-sm transition" title="Kembalikan">↩️<span> Kembalikan</span></button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function toggleSelectAllArsip(master) {
+      document.querySelectorAll('.arsip-checkbox').forEach(cb => cb.checked = master.checked);
+      updateArsipButtons();
+    }
+
+    function updateArsipButtons() {
+      const n = document.querySelectorAll('.arsip-checkbox:checked').length;
+      document.getElementById('arsipSelCount1').innerText = n;
+      document.getElementById('arsipSelCount2').innerText = n;
+      document.getElementById('arsipRestoreBtn').classList.toggle('hidden', n === 0);
+      document.getElementById('arsipDeleteBtn').classList.toggle('hidden', n === 0);
+    }
+
+    function arsipTerpilih() {
+      const rows = Array.from(document.querySelectorAll('.arsip-checkbox:checked')).map(cb => Number(cb.value));
+      return { rows, nisns: rows.map(r => (allArchive.find(s => s.rowNumber === r) || {}).nisn || '') };
+    }
+
+    // ---- Lihat / cetak ----
+    function lihatArsip(rowNumber) {
+      const s = allArchive.find(x => x.rowNumber === rowNumber);
+      if (!s) return;
+      document.getElementById('arsipViewInfo').innerText = `${s.nama_lengkap} • Arsip ${s.arsip_tahun || '-'} • diarsipkan ${s.arsip_waktu || '-'}`;
+      document.getElementById('arsipViewBody').innerHTML = `<div style="zoom:.85">${buildBlangkoSheetHTML(s)}</div>`;
+      document.getElementById('arsipViewPrintBtn').onclick = () => { tutupModal('arsipViewModal'); cetakArsip(rowNumber); };
+      document.getElementById('arsipViewModal').classList.remove('hidden');
+    }
+
+    function cetakArsip(rowNumber) {
+      const s = allArchive.find(x => x.rowNumber === rowNumber);
+      if (!s) return;
+      switchTab('print');
+      document.getElementById('printContainer').innerHTML = buildBlangkoSheetHTML(s);
+      ubahUkuranKertas();
+      Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'Blangko arsip siap. Klik Cetak / Simpan PDF.', showConfirmButton: false, timer: 2800 });
+    }
+
+    // ---- Kembalikan / hapus / export ----
+    function kembalikanArsipSatu(rowNumber) {
+      const s = allArchive.find(x => x.rowNumber === rowNumber);
+      if (!s) return;
+      Swal.fire({
+        title: 'Kembalikan ke daftar aktif?',
+        html: `<strong>${escapeHtml(s.nama_lengkap)}</strong> (NISN: ${escapeHtml(s.nisn)}) akan dipindahkan kembali ke daftar siswa aktif.`,
+        icon: 'question', showCancelButton: true, confirmButtonColor: '#059669', confirmButtonText: 'Ya, Kembalikan', cancelButtonText: 'Batal'
+      }).then(r => {
+        if (r.isConfirmed) jalankanAksiArsip({ action: 'restoreArchive', rowNumbers: [rowNumber], nisns: [s.nisn] }, 'Mengembalikan data...');
+      });
+    }
+
+    function kembalikanArsipTerpilih() {
+      const { rows, nisns } = arsipTerpilih();
+      if (!rows.length) return;
+      Swal.fire({
+        title: `Kembalikan ${rows.length} siswa ke daftar aktif?`,
+        text: 'NISN yang sudah ada di daftar aktif akan dilewati otomatis.',
+        icon: 'question', showCancelButton: true, confirmButtonColor: '#059669', confirmButtonText: 'Ya, Kembalikan', cancelButtonText: 'Batal'
+      }).then(r => {
+        if (r.isConfirmed) jalankanAksiArsip({ action: 'restoreArchive', rowNumbers: rows, nisns }, 'Mengembalikan data...');
+      });
+    }
+
+    function hapusArsipTerpilih() {
+      const { rows, nisns } = arsipTerpilih();
+      if (!rows.length) return;
+      Swal.fire({
+        title: `Hapus permanen ${rows.length} data arsip?`,
+        text: 'Data akan hilang dari Arsip dan tidak bisa dikembalikan.',
+        icon: 'warning', showCancelButton: true, confirmButtonColor: '#e11d48', confirmButtonText: 'Ya, Hapus Permanen', cancelButtonText: 'Batal'
+      }).then(r => {
+        if (r.isConfirmed) jalankanAksiArsip({ action: 'deleteArchive', rowNumbers: rows, nisns }, 'Menghapus arsip...');
+      });
+    }
+
+    function exportArsip() {
+      const tahun = document.getElementById('arsipTahunFilter').value || 'Semua';
+      exportExcel(filteredArchive, `Arsip_Biodata_Siswa_${tahun.replace(/[^a-zA-Z0-9_-]/g, '-')}.xlsx`, 'Arsip');
     }
 
     function tutupModal(id) {
